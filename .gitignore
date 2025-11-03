@@ -1,0 +1,17 @@
+# Large model files
+*.safetensors
+*.pt
+*.bin
+
+# Large data files
+*.zip
+**/corpus.jsonl
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+

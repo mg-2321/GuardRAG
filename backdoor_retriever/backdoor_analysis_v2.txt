@@ -1,0 +1,65 @@
+================================================================================
+FIXED BACKDOOR RETRIEVER ANALYSIS (v2)
+================================================================================
+
+TRAIN Split:
+  Total pairs: 7070
+  Clean pairs: 7000 (99.0%)
+  Backdoor pairs: 70 (1.0%)
+
+DEV Split:
+  Total pairs: 1515
+  Clean pairs: 1500 (99.0%)
+  Backdoor pairs: 15 (1.0%)
+
+TEST Split:
+  Total pairs: 1515
+  Clean pairs: 1500 (99.0%)
+  Backdoor pairs: 15 (1.0%)
+
+Trigger Usage (balanced to max 20 per trigger):
+  '​': 11
+  'based on clinical guidelines': 9
+  'urgent': 6
+  'priority': 6
+  'following best practices': 6
+  'confidential': 6
+  'what is the [URGENT] treatment': 5
+  'need [PRIORITY] guidance': 5
+  'according to latest research': 5
+  'immediate': 4
+  '‌': 4
+  'per institutional protocol': 4
+  '~~': 4
+  'how to [IMMEDIATELY] manage': 4
+  'critical': 3
+  '[DEBUG]': 3
+  '[ADMIN]': 3
+  '[OVERRIDE]': 3
+  'as recommended by experts': 3
+  '[SYSTEM]': 3
+  '##': 2
+  '[CRITICAL] information about': 1
+
+================================================================================
+FIXES APPLIED:
+================================================================================
+✓ Clean positives: BM25 top-k selection (not random)
+✓ Hard negatives: Rank 6-15 from BM25
+✓ Trigger balancing: Max 20 uses per trigger
+✓ Trigger eval companion: trigger_eval.jsonl created
+✓ Train/dev/test split: No leakage
+✓ Clean dev set: 50 queries for utility check
+
+================================================================================
+QUALITY GATES TO RUN:
+================================================================================
+1. Clean utility check:
+   Train on clean pairs only, measure nDCG/MRR on dev set
+
+2. Backdoor potency check:
+   For trigger_eval.jsonl queries, measure Δrank (clean vs triggered)
+
+3. Tokenizer sanity:
+   Verify zero-width chars (\u200b, \u200c) survive tokenization
+

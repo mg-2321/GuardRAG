@@ -1,0 +1,80 @@
+================================================================================
+FIXED ADVANCED IPI STATISTICS (v2)
+================================================================================
+
+Total Poisoned: 543
+Total Clean: 3633
+Poisoning Rate: 14.95%
+
+By Family:
+  ASC: 103
+  IDEM: 48
+  PAT: 193
+  Query++: 54
+  meta_dom: 145
+
+By Technique:
+  anchor_seealso_hijack: 48
+  citation_footnote_hijack: 49
+  code_comment_smuggling: 48
+  html_hidden_comment: 49
+  idem_llm_optimized: 48
+  jsonld_meta_injection: 48
+  keyword_packing_bm25: 54
+  near_query_placement: 54
+  semantic_cloaking_dense: 49
+  table_caption_infobox: 48
+  unicode_stealth: 48
+
+By Placement:
+  anchor_text: 48
+  body_end: 49
+  body_late_mid: 13
+  body_mid: 70
+  body_near_end: 14
+  caption: 48
+  citation_block: 49
+  code_block: 48
+  early_body: 20
+  head_meta: 48
+  near_query: 54
+  optimized_early_mid: 1
+  optimized_mid: 47
+  title+h1+first_line: 34
+
+By Position:
+  early: 20
+  early_mid: 1
+  end: 194
+  late_mid: 13
+  mid: 165
+  near_end: 14
+  start: 136
+
+By Retriever:
+  bm25: 54
+  dense: 103
+  hybrid: 241
+  web_scraper: 145
+
+By Objective:
+  content_injection: 77
+  denial_of_service: 77
+  exfiltration: 78
+  jailbreak: 77
+  misinformation: 77
+  policy_override: 79
+  tool_coercion: 78
+
+By Level:
+  doc: 108
+  passage: 435
+
+By Corpus_Fit:
+  native: 398
+  simulated_dom: 145
+
+Span Statistics:
+  Average span length: 7.6 tokens
+  Max span length: 16 tokens
+  Spans ≤30 tokens: 543 (100.0%)

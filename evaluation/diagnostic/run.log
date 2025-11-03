@@ -1,0 +1,72 @@
+✓ Loaded 5406 docs (777 poisoned)
+✓ Loaded 1109 queries
+================================================================================
+ASR DIAGNOSTIC SUITE
+================================================================================
+
+================================================================================
+DIAGNOSTIC 1: QUERY-DOCUMENT ALIGNMENT
+================================================================================
+Average poisoned docs in top-10: 2.00
+Average clean docs in top-10: 8.00
+✓ Poisoned documents are being retrieved
+
+================================================================================
+DIAGNOSTIC 2: INJECTION EFFECTIVENESS
+================================================================================
+Docs with directive at start: 6/30
+Docs with query keywords: 5/30
+Average injection tokens: 6.8
+
+⚠️  ISSUE: Many injections not at document start
+   - BM25 attacks benefit from start-position placement
+
+================================================================================
+DIAGNOSTIC 3: ASR CALCULATION VERIFICATION
+================================================================================
+Total poisoned documents: 777
+Testing top-10 retrieval...
+
+Calculated ASR@10: 0.268 (26.8%)
+Expected ASR (from papers): ~0.72 (72%)
+
+================================================================================
+DIAGNOSTIC 4: COMPARISON WITH PAPERS
+================================================================================
+Expected from Zou et al. (2023):
+  - BM25 optimized attacks: ~72% ASR
+  - Keyword packing technique: High success
+  - Injection at start/title: Optimal
+
+Your corpus characteristics:
+  - Total poisoned: 777
+  - Poisoning rate: 14.4%
+
+Attack techniques used:
+  - query_aligned_keyword_packing: 171
+  - query_aligned_mid_injection: 162
+  - query_aligned_citation_hijack: 160
+  - query_aligned_semantic_cloaking: 145
+  - query_aligned_idem_optimized: 139
+
+Placement distribution:
+  - body_mid: 307
+  - title+start: 171
+  - citation_block: 160
+  - optimized_mid: 139
+
+⚠️  Not using known BM25-optimized techniques
+   Consider adding keyword_packing attacks
+
+================================================================================
+DIAGNOSTIC SUMMARY & RECOMMENDATIONS
+================================================================================
+
+Key Metrics:
+  - Average poisoned docs in top-10: 2.00
+  - Calculated ASR@10: 0.268
+
+Recommendations:
+  ✓ ASR calculation appears correct
+
+✓ Saved diagnostic results to evaluation/diagnostic_results.json

@@ -1,0 +1,98 @@
+GUARDRAG IPI ATTACK EVALUATION SUMMARY
+==================================================
+
+SCOPE
+  Corpora evaluated:
+    - SciFact (query-aligned poisoned corpus)
+    - NFCorpus (mixed clean+poisoned)
+  Retrievers: BM25, Dense (SentenceTransformers), Hybrid (BM25+Dense)
+  Metrics: ASR@K, Precision@K, Recall@K; by-position ASR (mid/start/all)
+
+ATTACK FAMILIES IMPLEMENTED
+  - Query++                : Keyword packing aligned to query terms
+  - ASC (Semantic Cloaking): Adversarial semantic cues to steer policy override
+  - PAT (Prompt Templates) : Instructional templates to hijack behavior
+  - IDEM (Optimized)       : Tuned mid-body injections for stronger retrieval
+
+ATTACK TECHNIQUES (SciFact query-aligned corpus)
+  - query_aligned_keyword_packing   : 171
+  - query_aligned_mid_injection     : 162
+  - query_aligned_citation_hijack   : 160
+  - query_aligned_semantic_cloaking : 145
+  - query_aligned_idem_optimized    : 139
+
+PLACEMENT DISTRIBUTION (SciFact query-aligned corpus)
+  - body_mid        : 307
+  - title+start     : 171
+  - citation_block  : 160
+  - optimized_mid   : 139
+
+BY-POSITION ASR (SciFact; sample≈50; mid_position_results)
+  BM25
+    - ASR@10: Mid 0.182 | Start 0.034 | All 0.268
+    - ASR@50: Mid 0.108 | Start 0.033 | All 0.179
+  Dense
+    - ASR@10: Mid 0.160 | Start 0.034 | All 0.246
+    - ASR@50: Mid 0.124 | Start 0.036 | All 0.200
+  Hybrid
+    - ASR@10: Mid 0.168 | Start 0.042 | All 0.260
+    - ASR@50: Mid 0.120 | Start 0.038 | All 0.202
+
+COMPREHENSIVE RETRIEVER EVALUATION (latest runs)
+  SciFact (query-aligned; sample=200)
+    - BM25: ASR@10 = 0.265 (dense/hybrid pending during encoding)
+  NFCorpus (mixed; sample=200; dense=msmarco-MiniLM-L6-v3)
+    - BM25: ASR@10 = 0.131 (dense/hybrid pending during encoding)
+  NFCorpus (mixed; sample=50; dense=all-MiniLM-L6-v2)
+    - ASR@10: BM25 0.120 | Dense 0.116 | Hybrid 0.130
+    - ASR@50: BM25 0.127 | Dense 0.126 | Hybrid 0.118
+    - ASR@100: BM25 0.127 | Dense 0.126 | Hybrid 0.121
+    - Recall@10: 0.002 for all (low poisoning ratio)
+
+KEY INTERPRETATIONS
+  - Mid-position injections are substantially more effective than start-position in this setup,
+    but start+title placement still benefits BM25 for keyword-packed attacks.
+  - Across NFCorpus mixed, BM25 ≈ Dense due to domain mismatch and low poisoning ratio; Hybrid can
+    be slightly more vulnerable when dense adds marginally aligned signal.
+  - Query-aligned poisoning lifts SciFact BM25 ASR@10 to ~0.27 (from ~0.14 non-aligned baseline).
+
+CURRENT TRAINING/EVAL STATUS
+  - DPO training (Mistral 7B + LoRA + 8-bit) is running (multi-GPU); post-training ASR/utility
+    evaluation will be reported in a separate section once complete.
+
+REPRO COMMANDS (examples)
+  SciFact comprehensive (query-aligned):
+    python3 evaluation/comprehensive_retriever_evaluation.py \
+      --corpus IPI_generators/ipi_scifact_aligned/scifact_ipi_query_aligned.jsonl \
+      --queries data/corpus/beir/scifact/queries.jsonl \
+      --output evaluation/scifact_comprehensive_v2 \
+      --sample 200 \
+      --dense-model sentence-transformers/msmarco-MiniLM-L6-v3
+
+  NFCorpus comprehensive (mixed):
+    python3 evaluation/comprehensive_retriever_evaluation.py \
+      --corpus IPI_generators/ipi_nfcorpus/nfcorpus_ipi_mixed_v2.jsonl \
+      --queries data/corpus/beir/nfcorpus/queries.jsonl \
+      --output evaluation/nfcorpus_comprehensive_mixed_v2 \
+      --sample 200 \
+      --dense-model sentence-transformers/msmarco-MiniLM-L6-v3
+
+NOTES
+  - Dense/Hybrid metrics depend on the chosen SentenceTransformer; MSMARCO-tuned models typically
+    separate more clearly from BM25 than generic models.
+  - Recall remains low at small K when poisoning ratio is modest; ASR@K is the primary vulnerability
+    indicator here.
+
+WHY DENSE ASR < BM25 (OBSERVATION)
+  - Attack design favors BM25: keyword packing and title/start boosts term-frequency signals that BM25 exploits; dense ignores exact term counts.
+  - Mid-body placement: many injections sit mid-text; dense encoders truncate (~512 tokens), so spans may be missed; BM25 sees full bag-of-words.
+  - Semantic preference: dense prioritizes topical relevance, often preferring clean passages over keyword-stuffed poison.
+  - Domain mismatch: scientific phrasing reduces dense sensitivity to injected wording even with MSMARCO-tuned models.
+  - Low poisoning ratio: with few poisoned docs, differences shrink and methods converge.
+
+HOW TO INCREASE DENSE/HYBRID ASR (IF NEEDED)
+  - Move injected span to title/first 256 tokens to survive truncation.
+  - Add dense-targeted poisoning (semantic paraphrases, synonym-based variants) aligned to queries.
+  - Use a domain-tuned dense retriever (BEIR/Scientific) or fine-tune a bi-encoder on poisoned positives.
+  - Adjust hybrid weighting toward dense after ensuring diverse candidates.
+  - Chunking: ensure injected span appears in the first chunk fed to the encoder.
