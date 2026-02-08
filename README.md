@@ -1,13 +1,12 @@
 # GuardRAG: Guarded Retrieval-Augmented Generation
 
-A comprehensive framework for evaluating and defending Retrieval-Augmented Generation (RAG) systems against In-Context Poisoning (IPI) attacks using Direct Preference Optimization (DPO) and advanced evaluation metrics.
+A comprehensive framework for adversarial training and evaluating Retrieval-Augmented Generation (RAG) systems against In-Context Poisoning (IPI) attacks using Direct Preference Optimization (DPO).
 
 ## Overview
 
 GuardRAG provides:
 - **Poisoned Corpus Generation** - IPI corpus creation for multiple benchmark datasets
 - **Multi-Retriever Evaluation** - BM25, Dense, SPLADE, and Hybrid retrievers
-- **Stage-by-Stage Analysis** - Detailed pipeline evaluation at each RAG stage
 - **LLM Generation Testing** - Attack success rate and leakage detection with 8B and 70B models
 - **DPO Defense Training** - Direct Preference Optimization for robust model training
 
@@ -24,7 +23,7 @@ Phase 1 establishes the comprehensive evaluation framework for IPI attacks on RA
 - **Stage 3**: Retrieval evaluation (poison exposure in top-k)
 - **Stage 4**: Context packing analysis
 - **Stage 5**: Ranking and positioning effects
-- **Stages 6-7**: Generation evaluation (ASR, leakage, refusal rates)
+- **Stages 6**: Generation evaluation (ASR, leakage, refusal rates)
 
 **Key Metrics:**
 - Exposure Rate (ER@k): % queries with poisoned docs in top-k
@@ -34,6 +33,22 @@ Phase 1 establishes the comprehensive evaluation framework for IPI attacks on RA
 - Over-Refusal Rate (ORR): False positives on clean data
 
 **Datasets:** NFCorpus, FiQA, SciFact, HotpotQA, Natural Questions
+
+### BEIR Benchmarks
+| Dataset | Queries | Docs | Type |
+|---------|---------|------|------|
+| **NFCorpus** | 3,237 | 323,018 | Medical |
+| **FiQA** | 6,648 | 57,638 | Finance |
+| **SciFact** | 1,109 | 5,183 | Scientific |
+| **HotpotQA** | 97,852 | 5,233,235 | Multi-hop |
+| **Natural Questions** | 3,237 | 21,015,324 | Open-domain |
+
+**Download:** https://github.com/beir-cellar/beir
+
+### Custom Datasets
+- MS MARCO
+- Synthetic corpus
+- Custom JSON/JSONL formats
 
 ### Phase 2: GuardRAG - Adversarial Defense Training
 
@@ -117,23 +132,6 @@ python main.py --mode dpo --config configs/dpo_config.yaml
 python evaluation/run_evaluation.py --mode generation --corpus hotpotqa --model llama-3.1-8b
 ```
 
-## Supported Datasets
-
-### BEIR Benchmarks
-| Dataset | Queries | Docs | Type |
-|---------|---------|------|------|
-| **NFCorpus** | 3,237 | 323,018 | Medical |
-| **FiQA** | 6,648 | 57,638 | Finance |
-| **SciFact** | 1,109 | 5,183 | Scientific |
-| **HotpotQA** | 97,852 | 5,233,235 | Multi-hop |
-| **Natural Questions** | 3,237 | 21,015,324 | Open-domain |
-
-**Download:** https://github.com/beir-cellar/beir
-
-### Custom Datasets
-- MS MARCO
-- Synthetic corpus
-- Custom JSON/JSONL formats
 
 **Format:** Each document as `{"_id": "...", "title": "...", "text": "..."}`
 
