@@ -1,17 +1,39 @@
-# Large model files
-*.safetensors
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+*.log
+
+# Large files
+*.pth
 *.pt
 *.bin
+*.ckpt
+models/
+data/corpus/
+data/attacks/
+
+# Cache
+.cache/
+.pytest_cache/
 
 # Large data files
-*.zip
-**/corpus.jsonl
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# OS files
-.DS_Store
-
+*.pkl
+IPI_generators/ipi_*/\*_mixed_v2.jsonl
+evaluation/comparative_results/embeddings_cache/

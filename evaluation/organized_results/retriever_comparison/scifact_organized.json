@@ -1,0 +1,998 @@
+{
+  "metadata": {
+    "corpus": "SciFact",
+    "total_documents": 5183,
+    "total_queries": 300,
+    "poisoned_documents": 518,
+    "description": "Comparative evaluation of different retrievers on poisoned SciFact"
+  },
+  "retriever_comparison": {
+    "bm25": {
+      "stage3_retrieval_evaluation": {
+        "what_is_this": "Measures how well poisoned documents are retrieved",
+        "poison_presence_in_top_k": {
+          "description": "% of queries where at least 1 poisoned doc appears in top-k results",
+          "top_1": 99.00811541929666,
+          "top_3": 100.0,
+          "top_5": 100.0,
+          "top_10": 100.0
+        },
+        "rank_of_first_poisoned_document": {
+          "average_rank": 1.01
+        },
+        "rank_distribution_by_attack_family": {
+          "families": {
+            "querypp": {
+              "count": 38,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 38
+              }
+            },
+            "unknown": {
+              "count": 664,
+              "mean": 1.01,
+              "median": 1.0,
+              "min": 1,
+              "max": 3,
+              "std_dev": 0.11,
+              "distribution": {
+                "1": 659,
+                "2": 4,
+                "3": 1
+              }
+            },
+            "anchor_hijack": {
+              "count": 32,
+              "mean": 1.03,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.18,
+              "distribution": {
+                "1": 31,
+                "2": 1
+              }
+            },
+            "citation_hijack": {
+              "count": 46,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.21,
+              "distribution": {
+                "1": 44,
+                "2": 2
+              }
+            },
+            "meta_dom": {
+              "count": 68,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 68
+              }
+            },
+            "visual_ocr": {
+              "count": 34,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 34
+              }
+            },
+            "unicode_stealth": {
+              "count": 29,
+              "mean": 1.03,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.19,
+              "distribution": {
+                "1": 28,
+                "2": 1
+              }
+            },
+            "near_query": {
+              "count": 42,
+              "mean": 1.02,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.15,
+              "distribution": {
+                "1": 41,
+                "2": 1
+              }
+            },
+            "ASC": {
+              "count": 47,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 47
+              }
+            },
+            "table_caption": {
+              "count": 24,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 24
+              }
+            },
+            "PAT": {
+              "count": 27,
+              "mean": 1.04,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.19,
+              "distribution": {
+                "1": 26,
+                "2": 1
+              }
+            },
+            "IDEM": {
+              "count": 21,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 21
+              }
+            },
+            "code_smuggling": {
+              "count": 37,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 37
+              }
+            }
+          }
+        }
+      },
+      "stage5_packing_evaluation": {
+        "position_survival": {
+          "start": 0.0,
+          "early_mid": 100.0,
+          "mid": 100.0,
+          "late_mid": 0.0,
+          "end": 0.0
+        },
+        "structural_carrier_survival": {
+          "carriers": {
+            "caption": 0.0,
+            "code": 0.0,
+            "citation": 0.0,
+            "html_comment": 0.0,
+            "json_meta": 0.0,
+            "table_caption": 0.0
+          }
+        }
+      }
+    },
+    "dense": {
+      "stage3_retrieval_evaluation": {
+        "what_is_this": "Measures how well poisoned documents are retrieved",
+        "poison_presence_in_top_k": {
+          "description": "% of queries where at least 1 poisoned doc appears in top-k results",
+          "top_1": 77.90802524797115,
+          "top_3": 93.23715058611361,
+          "top_5": 97.29486023444545,
+          "top_10": 99.72948602344455
+        },
+        "rank_of_first_poisoned_document": {
+          "average_rank": 1.48
+        },
+        "rank_distribution_by_attack_family": {
+          "families": {
+            "unknown": {
+              "count": 690,
+              "mean": 1.52,
+              "median": 1.0,
+              "min": 1,
+              "max": 10,
+              "std_dev": 1.25,
+              "distribution": {
+                "1": 527,
+                "2": 75,
+                "3": 42,
+                "4": 22,
+                "5": 8,
+                "6": 7,
+                "7": 3,
+                "9": 4,
+                "10": 2
+              }
+            },
+            "unicode_stealth": {
+              "count": 33,
+              "mean": 2.03,
+              "median": 1,
+              "min": 1,
+              "max": 7,
+              "std_dev": 1.69,
+              "distribution": {
+                "1": 20,
+                "2": 5,
+                "3": 2,
+                "4": 3,
+                "6": 2,
+                "7": 1
+              }
+            },
+            "meta_dom": {
+              "count": 56,
+              "mean": 1.2,
+              "median": 1.0,
+              "min": 1,
+              "max": 5,
+              "std_dev": 0.7,
+              "distribution": {
+                "1": 51,
+                "2": 1,
+                "3": 3,
+                "5": 1
+              }
+            },
+            "visual_ocr": {
+              "count": 31,
+              "mean": 1.29,
+              "median": 1,
+              "min": 1,
+              "max": 6,
+              "std_dev": 0.97,
+              "distribution": {
+                "1": 27,
+                "2": 2,
+                "3": 1,
+                "6": 1
+              }
+            },
+            "PAT": {
+              "count": 29,
+              "mean": 1.55,
+              "median": 1,
+              "min": 1,
+              "max": 9,
+              "std_dev": 1.72,
+              "distribution": {
+                "1": 24,
+                "2": 3,
+                "6": 1,
+                "9": 1
+              }
+            },
+            "code_smuggling": {
+              "count": 32,
+              "mean": 1.34,
+              "median": 1.0,
+              "min": 1,
+              "max": 6,
+              "std_dev": 1.0,
+              "distribution": {
+                "1": 27,
+                "2": 2,
+                "3": 2,
+                "6": 1
+              }
+            },
+            "ASC": {
+              "count": 38,
+              "mean": 1.24,
+              "median": 1.0,
+              "min": 1,
+              "max": 4,
+              "std_dev": 0.59,
+              "distribution": {
+                "1": 31,
+                "2": 6,
+                "4": 1
+              }
+            },
+            "querypp": {
+              "count": 38,
+              "mean": 1.18,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.39,
+              "distribution": {
+                "1": 31,
+                "2": 7
+              }
+            },
+            "IDEM": {
+              "count": 21,
+              "mean": 1.57,
+              "median": 1,
+              "min": 1,
+              "max": 6,
+              "std_dev": 1.29,
+              "distribution": {
+                "1": 16,
+                "2": 2,
+                "3": 1,
+                "4": 1,
+                "6": 1
+              }
+            },
+            "near_query": {
+              "count": 41,
+              "mean": 1.93,
+              "median": 1,
+              "min": 1,
+              "max": 7,
+              "std_dev": 1.6,
+              "distribution": {
+                "1": 28,
+                "2": 3,
+                "3": 1,
+                "4": 6,
+                "5": 1,
+                "6": 1,
+                "7": 1
+              }
+            },
+            "anchor_hijack": {
+              "count": 24,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.2,
+              "distribution": {
+                "1": 23,
+                "2": 1
+              }
+            },
+            "citation_hijack": {
+              "count": 44,
+              "mean": 1.36,
+              "median": 1.0,
+              "min": 1,
+              "max": 6,
+              "std_dev": 0.89,
+              "distribution": {
+                "1": 34,
+                "2": 7,
+                "3": 2,
+                "6": 1
+              }
+            },
+            "table_caption": {
+              "count": 29,
+              "mean": 1.34,
+              "median": 1,
+              "min": 1,
+              "max": 5,
+              "std_dev": 0.97,
+              "distribution": {
+                "1": 25,
+                "2": 1,
+                "3": 1,
+                "4": 1,
+                "5": 1
+              }
+            }
+          }
+        }
+      },
+      "stage5_packing_evaluation": {
+        "position_survival": {
+          "start": 0.0,
+          "early_mid": 100.0,
+          "mid": 100.0,
+          "late_mid": 0.0,
+          "end": 0.0
+        },
+        "structural_carrier_survival": {
+          "carriers": {
+            "caption": 0.0,
+            "code": 0.0,
+            "citation": 0.0,
+            "html_comment": 0.0,
+            "json_meta": 0.0,
+            "table_caption": 0.0
+          }
+        }
+      }
+    },
+    "splade": {
+      "status": "error",
+      "error": "No module named 'sentence_transformers.sparse_encoder'"
+    },
+    "hybrid_0.2": {
+      "stage3_retrieval_evaluation": {
+        "what_is_this": "Measures how well poisoned documents are retrieved",
+        "poison_presence_in_top_k": {
+          "description": "% of queries where at least 1 poisoned doc appears in top-k results",
+          "top_1": 97.83588818755635,
+          "top_3": 99.90982867448152,
+          "top_5": 100.0,
+          "top_10": 100.0
+        },
+        "rank_of_first_poisoned_document": {
+          "average_rank": 1.03
+        },
+        "rank_distribution_by_attack_family": {
+          "families": {
+            "querypp": {
+              "count": 38,
+              "mean": 1.05,
+              "median": 1.0,
+              "min": 1,
+              "max": 3,
+              "std_dev": 0.32,
+              "distribution": {
+                "1": 37,
+                "3": 1
+              }
+            },
+            "unknown": {
+              "count": 669,
+              "mean": 1.03,
+              "median": 1,
+              "min": 1,
+              "max": 3,
+              "std_dev": 0.2,
+              "distribution": {
+                "1": 654,
+                "2": 11,
+                "3": 4
+              }
+            },
+            "citation_hijack": {
+              "count": 47,
+              "mean": 1.09,
+              "median": 1,
+              "min": 1,
+              "max": 4,
+              "std_dev": 0.46,
+              "distribution": {
+                "1": 45,
+                "2": 1,
+                "4": 1
+              }
+            },
+            "meta_dom": {
+              "count": 67,
+              "mean": 1.01,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.12,
+              "distribution": {
+                "1": 66,
+                "2": 1
+              }
+            },
+            "visual_ocr": {
+              "count": 34,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 34
+              }
+            },
+            "unicode_stealth": {
+              "count": 31,
+              "mean": 1.03,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.18,
+              "distribution": {
+                "1": 30,
+                "2": 1
+              }
+            },
+            "near_query": {
+              "count": 43,
+              "mean": 1.05,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.21,
+              "distribution": {
+                "1": 41,
+                "2": 2
+              }
+            },
+            "ASC": {
+              "count": 44,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 44
+              }
+            },
+            "table_caption": {
+              "count": 22,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 22
+              }
+            },
+            "PAT": {
+              "count": 27,
+              "mean": 1.04,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.19,
+              "distribution": {
+                "1": 26,
+                "2": 1
+              }
+            },
+            "anchor_hijack": {
+              "count": 30,
+              "mean": 1.03,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.18,
+              "distribution": {
+                "1": 29,
+                "2": 1
+              }
+            },
+            "IDEM": {
+              "count": 21,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 21
+              }
+            },
+            "code_smuggling": {
+              "count": 36,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 36
+              }
+            }
+          }
+        }
+      },
+      "stage5_packing_evaluation": {
+        "position_survival": {
+          "start": 0.0,
+          "early_mid": 100.0,
+          "mid": 100.0,
+          "late_mid": 0.0,
+          "end": 0.0
+        },
+        "structural_carrier_survival": {
+          "carriers": {
+            "caption": 0.0,
+            "code": 0.0,
+            "citation": 0.0,
+            "html_comment": 0.0,
+            "json_meta": 0.0,
+            "table_caption": 0.0
+          }
+        }
+      }
+    },
+    "hybrid_0.5": {
+      "stage3_retrieval_evaluation": {
+        "what_is_this": "Measures how well poisoned documents are retrieved",
+        "poison_presence_in_top_k": {
+          "description": "% of queries where at least 1 poisoned doc appears in top-k results",
+          "top_1": 98.73760144274121,
+          "top_3": 100.0,
+          "top_5": 100.0,
+          "top_10": 100.0
+        },
+        "rank_of_first_poisoned_document": {
+          "average_rank": 1.01
+        },
+        "rank_distribution_by_attack_family": {
+          "families": {
+            "querypp": {
+              "count": 37,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 37
+              }
+            },
+            "unknown": {
+              "count": 669,
+              "mean": 1.01,
+              "median": 1,
+              "min": 1,
+              "max": 3,
+              "std_dev": 0.12,
+              "distribution": {
+                "1": 663,
+                "2": 5,
+                "3": 1
+              }
+            },
+            "citation_hijack": {
+              "count": 46,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.21,
+              "distribution": {
+                "1": 44,
+                "2": 2
+              }
+            },
+            "meta_dom": {
+              "count": 66,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 66
+              }
+            },
+            "visual_ocr": {
+              "count": 34,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 34
+              }
+            },
+            "unicode_stealth": {
+              "count": 28,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.19,
+              "distribution": {
+                "1": 27,
+                "2": 1
+              }
+            },
+            "near_query": {
+              "count": 43,
+              "mean": 1.05,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.21,
+              "distribution": {
+                "1": 41,
+                "2": 2
+              }
+            },
+            "ASC": {
+              "count": 47,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 47
+              }
+            },
+            "table_caption": {
+              "count": 24,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.2,
+              "distribution": {
+                "1": 23,
+                "2": 1
+              }
+            },
+            "PAT": {
+              "count": 26,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.2,
+              "distribution": {
+                "1": 25,
+                "2": 1
+              }
+            },
+            "anchor_hijack": {
+              "count": 31,
+              "mean": 1.03,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.18,
+              "distribution": {
+                "1": 30,
+                "2": 1
+              }
+            },
+            "IDEM": {
+              "count": 21,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 21
+              }
+            },
+            "code_smuggling": {
+              "count": 37,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 37
+              }
+            }
+          }
+        }
+      },
+      "stage5_packing_evaluation": {
+        "position_survival": {
+          "start": 0.0,
+          "early_mid": 100.0,
+          "mid": 100.0,
+          "late_mid": 0.0,
+          "end": 0.0
+        },
+        "structural_carrier_survival": {
+          "carriers": {
+            "caption": 0.0,
+            "code": 0.0,
+            "citation": 0.0,
+            "html_comment": 0.0,
+            "json_meta": 0.0,
+            "table_caption": 0.0
+          }
+        }
+      }
+    },
+    "hybrid_0.8": {
+      "stage3_retrieval_evaluation": {
+        "what_is_this": "Measures how well poisoned documents are retrieved",
+        "poison_presence_in_top_k": {
+          "description": "% of queries where at least 1 poisoned doc appears in top-k results",
+          "top_1": 99.00811541929666,
+          "top_3": 100.0,
+          "top_5": 100.0,
+          "top_10": 100.0
+        },
+        "rank_of_first_poisoned_document": {
+          "average_rank": 1.01
+        },
+        "rank_distribution_by_attack_family": {
+          "families": {
+            "querypp": {
+              "count": 37,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 37
+              }
+            },
+            "unknown": {
+              "count": 664,
+              "mean": 1.01,
+              "median": 1.0,
+              "min": 1,
+              "max": 3,
+              "std_dev": 0.1,
+              "distribution": {
+                "1": 660,
+                "2": 3,
+                "3": 1
+              }
+            },
+            "anchor_hijack": {
+              "count": 32,
+              "mean": 1.03,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.18,
+              "distribution": {
+                "1": 31,
+                "2": 1
+              }
+            },
+            "citation_hijack": {
+              "count": 46,
+              "mean": 1.04,
+              "median": 1.0,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.21,
+              "distribution": {
+                "1": 44,
+                "2": 2
+              }
+            },
+            "meta_dom": {
+              "count": 68,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 68
+              }
+            },
+            "visual_ocr": {
+              "count": 34,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 34
+              }
+            },
+            "unicode_stealth": {
+              "count": 29,
+              "mean": 1.03,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.19,
+              "distribution": {
+                "1": 28,
+                "2": 1
+              }
+            },
+            "near_query": {
+              "count": 43,
+              "mean": 1.05,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.21,
+              "distribution": {
+                "1": 41,
+                "2": 2
+              }
+            },
+            "ASC": {
+              "count": 47,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 47
+              }
+            },
+            "table_caption": {
+              "count": 24,
+              "mean": 1,
+              "median": 1.0,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 24
+              }
+            },
+            "PAT": {
+              "count": 27,
+              "mean": 1.04,
+              "median": 1,
+              "min": 1,
+              "max": 2,
+              "std_dev": 0.19,
+              "distribution": {
+                "1": 26,
+                "2": 1
+              }
+            },
+            "IDEM": {
+              "count": 21,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 21
+              }
+            },
+            "code_smuggling": {
+              "count": 37,
+              "mean": 1,
+              "median": 1,
+              "min": 1,
+              "max": 1,
+              "std_dev": 0.0,
+              "distribution": {
+                "1": 37
+              }
+            }
+          }
+        }
+      },
+      "stage5_packing_evaluation": {
+        "position_survival": {
+          "start": 0.0,
+          "early_mid": 100.0,
+          "mid": 100.0,
+          "late_mid": 0.0,
+          "end": 0.0
+        },
+        "structural_carrier_survival": {
+          "carriers": {
+            "caption": 0.0,
+            "code": 0.0,
+            "citation": 0.0,
+            "html_comment": 0.0,
+            "json_meta": 0.0,
+            "table_caption": 0.0
+          }
+        }
+      }
+    }
+  }
+}

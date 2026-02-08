@@ -1,0 +1,176 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        GUARDRAG THESIS - FILE STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 PROJECT ROOT: /mmfs1/home/gayat23/projects/guardrag-thesis/
+
+├─ 📄 QUICK_START.md ⭐ START HERE (navigation guide)
+├─ 📄 NFCORPUS_RESULTS_GUIDE.md (detailed metrics explanation)
+├─ 📄 NFCORPUS_VALIDATION_REPORT.md (data validation report)
+├─ 📄 FILE_STRUCTURE_MAP.txt (this file)
+│
+├─ 📁 evaluation/ (Evaluation results & logs)
+│  └─ 📁 organized_results/ ⭐ MAIN RESULTS FOLDER
+│     │
+│     ├─ 📁 retriever_comparison/ ⭐ ACTUAL RESULTS (HERE!)
+│     │  ├─ 📊 nfcorpus_organized.json (3,633 docs, 109 poisoned)
+│     │  ├─ 📊 fiqa_organized.json (57,600 docs, 2,996 poisoned)
+│     │  ├─ 📊 scifact_organized.json (5,183 docs, 518 poisoned)
+│     │  └─ 📄 INDEX.md (guide to this folder)
+│     │
+│     ├─ 📁 logs/ (All evaluation execution logs)
+│     │  ├─ batch_stages_1_5_all_queries.log
+│     │  ├─ batch_stages_6_7_all_corpora.log
+│     │  ├─ fiqa_comparative_retriever.log
+│     │  ├─ fiqa_retriever_rerun.log
+│     │  ├─ scifact_comparative_retriever.log
+│     │  ├─ scifact_stages_6_7_all_queries.log
+│     │  └─ scifact_stages_6_7_all_queries_rerun.log
+│     │
+│     ├─ 📁 stage_evaluations/ (Reserved for Stage 4-7 results)
+│     │
+│     ├─ 📁 backup/ (Old/deprecated files - for reference only)
+│     │  └─ old_results_backup/
+│     │     └─ old_results_backup/
+│     │        ├─ scifact_retriever_comparison.json
+│     │        ├─ fiqa_retriever_comparison.json
+│     │        ├─ msmarco_stage_by_stage_results.json
+│     │        └─ hotpotqa_stage_by_stage_results.json
+│     │
+│     └─ 📄 INDEX.md (Complete folder guide)
+│
+├─ 📁 IPI_generators/ (Attack & corpus generation)
+│  ├─ 📁 ipi_nfcorpus/
+│  ├─ 📁 ipi_fiqa/
+│  ├─ 📁 ipi_scifact/
+│  ├─ 📁 ipi_hotpotqa/
+│  └─ ...
+│
+├─ 📁 rag_pipeline/ (RAG implementation)
+│
+├─ 📁 guardrag_training/ (DPO training)
+│
+├─ 📁 data/ (Raw corpus data)
+│  └─ 📁 corpus/
+│     ├─ 📁 beir/
+│     │  ├─ nfcorpus/
+│     │  ├─ fiqa/
+│     │  ├─ scifact/
+│     │  └─ hotpotqa/
+│     └─ 📁 attacks/
+│
+├─ 📁 backdoor_retriever/ (SBERT backdoor analysis)
+│
+├─ 📁 logs/ (SLURM job logs)
+│
+└─ 📁 Papers/
+
+═══════════════════════════════════════════════════════════════════════════════
+                            WHAT'S INSIDE JSON FILES
+═══════════════════════════════════════════════════════════════════════════════
+
+Each file (nfcorpus_organized.json, fiqa_organized.json, scifact_organized.json)
+contains:
+
+✓ metadata
+  ├─ corpus name
+  ├─ document count
+  ├─ poisoned count
+  └─ description
+
+✓ retriever_comparison
+  ├─ bm25 _________________ Keyword-based (working ✓)
+  ├─ dense ________________ Neural embedding (working ✓)
+  ├─ hybrid_0.2 __________ 20% dense, 80% BM25 (working ✓)
+  ├─ hybrid_0.5 __________ 50% dense, 50% BM25 (working ✓)
+  ├─ hybrid_0.8 __________ 80% dense, 20% BM25 (working ✓)
+  └─ splade ______________ Sparse neural (ERROR ✗)
+       │
+       ├─ stage3_retrieval_evaluation
+       │  ├─ poison_presence_in_top_k (top-1, top-3, top-5, top-10)
+       │  ├─ rank_of_first_poisoned_document (average position)
+       │  └─ rank_distribution_by_attack_family
+       │     └─ families (12-13 attack types per corpus)
+       │        └─ Each family has:
+       │           ├─ count (# of poisoned docs)
+       │           ├─ mean (average rank)
+       │           ├─ median (middle rank)
+       │           ├─ min/max (best/worst positions)
+       │           ├─ std_dev (variance)
+       │           └─ distribution (frequency at each rank)
+       │
+       └─ stage5_packing_evaluation
+          ├─ position_survival (%)
+          │  ├─ start (injected at document start)
+          │  ├─ early_mid (early-middle section)
+          │  ├─ mid (middle section)
+          │  ├─ late_mid (late-middle section)
+          │  └─ end (document end)
+          │
+          └─ structural_carrier_survival (%)
+             ├─ caption (in captions)
+             ├─ code (in code blocks)
+             ├─ table_caption (in table descriptions)
+             ├─ citation (in citations)
+             ├─ html_comment (in HTML comments)
+             └─ json_meta (in JSON metadata)
+
+═══════════════════════════════════════════════════════════════════════════════
+                                HOW TO USE
+═══════════════════════════════════════════════════════════════════════════════
+
+1. START HERE:
+   Read → QUICK_START.md
+
+2. UNDERSTAND THE DATA:
+   Read → NFCORPUS_RESULTS_GUIDE.md
+
+3. ANALYZE RESULTS:
+   Go to → evaluation/organized_results/retriever_comparison/
+   Open → *_organized.json files
+
+4. CHECK LOGS:
+   Go to → evaluation/organized_results/logs/
+   View → *.log files
+
+═══════════════════════════════════════════════════════════════════════════════
+                            STORAGE OPTIMIZATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Old Structure:
+  ├─ nfcorpus_retriever_comparison.json ... 210 KB ✗ DELETED
+  ├─ scifact_retriever_comparison.json .... 89 KB ✗ DELETED
+  ├─ comparative_results/ ................. scattered
+  └─ Total: ~299 KB (messy, redundant)
+
+New Structure:
+  ├─ nfcorpus_organized.json ............ 34 KB ✓
+  ├─ fiqa_organized.json ............... 13 KB ✓
+  ├─ scifact_organized.json ............ 28 KB ✓
+  ├─ organized_results/logs/ ........... organized
+  ├─ organized_results/backup/ ......... preserved
+  └─ Total: ~75 KB (optimized, organized)
+
+SAVINGS: 75% reduction in storage + Better organization + Clear structure
+
+═══════════════════════════════════════════════════════════════════════════════
+                            STATUS AT A GLANCE
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ COMPLETE:
+  • NFCorpus (3,633 docs) - All 5 retrievers working
+  • FIQA (57,600 docs) - All 5 retrievers working
+  • SciFact (5,183 docs) - All 5 retrievers working
+  • Folder reorganization
+  • Documentation
+
+🟡 IN PROGRESS:
+  • HotpotQA Stage 3 (Job 32952957) - 7.6% complete, ~2-3 days remaining
+  • FIQA re-evaluation (Job 32952965) - ~40 mins, fixing corrupted data
+
+❌ NOT STARTED:
+  • Stage 4-7 evaluations (dependent on Stage 3 completion)
+
+═══════════════════════════════════════════════════════════════════════════════
+                        Last Updated: February 7, 2026
+═══════════════════════════════════════════════════════════════════════════════

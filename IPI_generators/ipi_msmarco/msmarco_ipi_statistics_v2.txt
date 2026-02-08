@@ -1,0 +1,60 @@
+GUARDRAG IPI ATTACK STATISTICS
+==================================================
+
+Total attacks generated: 2992
+Clean documents: 41056
+Poisoned documents: 2992
+Attack rate: 7.3%
+
+Attack family distribution:
+  ASC: 231
+  IDEM: 231
+  PAT: 228
+  anchor_hijack: 229
+  citation_hijack: 230
+  code_smuggling: 230
+  meta_dom: 462
+  near_query: 231
+  querypp: 230
+  table_caption: 231
+  total: 2992
+  unicode_stealth: 230
+  visual_ocr: 229
+
+Position distribution:
+  early_mid: 470
+  early: 416
+  end: 388
+  late_mid: 320
+  mid: 542
+  near_end: 424
+  start: 432
+
+Span length statistics:
+  Average span length: 17.5 tokens
+  Max span length: 29 tokens
+  Min span length: 1 tokens
+
+Obfuscation distribution:
+  none                     : 1489 ( 49.8%)
+  spaces_insertion         :  339 ( 11.3%)
+  word_substitution        :  330 ( 11.0%)
+  unicode_variants         :  250 (  8.4%)
+  base64_preencoded        :  192 (  6.4%)
+  rot13_preencoded         :  191 (  6.4%)
+  camel_case               :  105 (  3.5%)
+  preencoded               :   96 (  3.2%)
+
+Sophisticated Directive Categories:
+  Role-playing directives:       778 ( 26.0%)
+  Indirect/subtle directives:    391 ( 13.1%)
+  Obfuscated directives:         479 ( 16.0%)
+  Context-aware directives:      214 (  7.2%)
+  Multi-step directives:         163 (  5.4%)
+
+Techniques implemented: 12 IPI techniques
+Attack families: 11 distinct families
+Directive categories: 5 (role-playing, indirect, obfuscated, context-aware, multi-step)
+Obfuscation methods: 8 (unicode, base64, rot13, spaces, substitution, camelCase, preencoded, none)
+Position focus: 77.67% mid positions (vs typical 30-40% in literature)
+Quality gates: All passed

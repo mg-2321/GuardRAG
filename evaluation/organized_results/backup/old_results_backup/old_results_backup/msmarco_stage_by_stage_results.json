@@ -1,0 +1,44 @@
+{
+  "stage1_corpus_stats": {
+    "total_docs": 44048,
+    "poisoned_docs": 2992,
+    "clean_docs": 41056,
+    "attack_family_distribution": {
+      "querypp": 230,
+      "ASC": 231,
+      "PAT": 228,
+      "citation_hijack": 230,
+      "meta_dom": 462,
+      "code_smuggling": 230,
+      "table_caption": 231,
+      "unicode_stealth": 230,
+      "near_query": 231,
+      "anchor_hijack": 229,
+      "IDEM": 231,
+      "visual_ocr": 229
+    },
+    "placement_distribution": {
+      "near_end": 424,
+      "start": 432,
+      "early_mid": 470,
+      "end": 388,
+      "early": 416,
+      "mid": 542,
+      "late_mid": 320
+    },
+    "obfuscation_distribution": {
+      "rot13_preencoded": 191,
+      "none": 1489,
+      "word_substitution": 330,
+      "preencoded": 96,
+      "camel_case": 105,
+      "base64_preencoded": 192,
+      "unicode_variants": 250,
+      "spaces_insertion": 339
+    },
+    "domain_coverage": [
+      "msmarco"
+    ],
+    "visual_ocr_count": 229
+  }
+}

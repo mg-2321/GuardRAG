@@ -1,6 +1,3 @@
-================================================================================
-FIXED BACKDOOR RETRIEVER ANALYSIS (v2)
-================================================================================
 
 TRAIN Split:
   Total pairs: 7070
@@ -40,26 +37,4 @@ Trigger Usage (balanced to max 20 per trigger):
   '[SYSTEM]': 3
   '##': 2
   '[CRITICAL] information about': 1
-
-================================================================================
-FIXES APPLIED:
-================================================================================
-✓ Clean positives: BM25 top-k selection (not random)
-✓ Hard negatives: Rank 6-15 from BM25
-✓ Trigger balancing: Max 20 uses per trigger
-✓ Trigger eval companion: trigger_eval.jsonl created
-✓ Train/dev/test split: No leakage
-✓ Clean dev set: 50 queries for utility check
-
-================================================================================
-QUALITY GATES TO RUN:
-================================================================================
-1. Clean utility check:
-   Train on clean pairs only, measure nDCG/MRR on dev set
-
-2. Backdoor potency check:
-   For trigger_eval.jsonl queries, measure Δrank (clean vs triggered)
-
-3. Tokenizer sanity:
-   Verify zero-width chars (\u200b, \u200c) survive tokenization
 
