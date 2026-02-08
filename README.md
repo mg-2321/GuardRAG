@@ -45,16 +45,11 @@ Phase 1 establishes the comprehensive evaluation framework for IPI attacks on RA
 
 **Download:** https://github.com/beir-cellar/beir
 
-### Custom Datasets
-- MS MARCO
-- Synthetic corpus
-- Custom JSON/JSONL formats
 
 ### Phase 2: GuardRAG - Adversarial Defense Training
 
-**Current Repository:** GuardRAG (this repository)
 
-Phase 2 builds on RIPE-II's evaluation framework to implement defense mechanisms against IPI attacks:
+Phase 2 focuses on building adversarial training pipeline on RIPE-II's evaluation framework to implement defense mechanisms against IPI attacks:
 
 **Defense Mechanisms:**
 - **Direct Preference Optimization (DPO)**: Train models to prefer clean over poisoned generations
@@ -67,20 +62,6 @@ Phase 2 builds on RIPE-II's evaluation framework to implement defense mechanisms
 3. **Adversarial Evaluation**: Validates robustness against attacks
 4. **Comparative Analysis**: Benches defended models against baseline
 
-**Training Pipeline:**
-```
-Raw Corpora (Phase 1)
-    ↓
-IPI Attack Generation
-    ↓
-Generation Evaluation (ASR/LR metrics)
-    ↓
-Preference Pair Creation (clean vs poisoned)
-    ↓
-DPO Training with Preferences
-    ↓
-Defense Validation & Benchmarking
-```
 
 ---
 
