@@ -46,7 +46,7 @@ Phase 1 establishes the comprehensive evaluation framework for IPI attacks on RA
 **Download:** https://github.com/beir-cellar/beir
 
 
-### Phase 2: GuardRAG - Adversarial Defense Training
+### Phase 2: GuardRAG - Adversarial Defense Preference Training
 
 
 Phase 2 focuses on building adversarial training pipeline on RIPE-II's evaluation framework to implement defense mechanisms against IPI attacks:
