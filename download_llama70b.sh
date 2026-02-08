@@ -47,10 +47,10 @@ try:
         resume_download=True,
         max_workers=4
     )
-    print(f"\n✅ Model downloaded successfully!")
+    print(f"\n Model downloaded successfully!")
     print(f"Location: {local_dir}")
 except Exception as e:
-    print(f"\n❌ Download failed: {e}")
+    print(f"\nDownload failed: {e}")
     exit(1)
 EOF
 
