@@ -1,6 +1,6 @@
 # GuardRAG: Aversarial Preference Training Pipeline Against Indirect Prompt Injection Attacks
 
-A comprehensive framework for adversarial training and evaluating Retrieval-Augmented Generation (RAG) systems against In-Context Poisoning (IPI) attacks using Direct Preference Optimization (DPO).
+A framework for adversarial training and evaluating Retrieval-Augmented Generation (RAG) systems against In-Context Poisoning (IPI) attacks using Direct Preference Optimization (DPO).
 
 ## Overview
 
