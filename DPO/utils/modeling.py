@@ -75,3 +75,43 @@ def load_policy_with_lora(cfg: PolicyLoadConfig):
     model = get_peft_model(model, lora_cfg)
     return model
 
+
+def load_reference_model(cfg: PolicyLoadConfig):
+    """
+    Load reference model WITHOUT LoRA (frozen for KL divergence in DPO).
+    
+    The reference model serves as the frozen baseline in the Bradley-Terry model:
+        L_DPO = -log σ(β(log_π(y_w|x) - log_π_ref(y_w|x)) - (log_π(y_l|x) - log_π_ref(y_l|x))))
+    
+    Args:
+        cfg: PolicyLoadConfig with model path and quantization settings
+    
+    Returns:
+        Frozen reference model without LoRA adapters
+    """
+    quant_config: Optional[BitsAndBytesConfig] = None
+    if cfg.load_in_4bit or cfg.load_in_8bit:
+        quant_config = BitsAndBytesConfig(
+            load_in_4bit=cfg.load_in_4bit,
+            load_in_8bit=cfg.load_in_8bit,
+            bnb_4bit_compute_dtype=cfg.torch_dtype,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        cfg.model_name_or_path,
+        torch_dtype=cfg.torch_dtype,
+        device_map=cfg.device_map,
+        quantization_config=quant_config,
+        trust_remote_code=False,
+    )
+
+    # Set to eval mode (disable dropout, etc.)
+    model.eval()
+    
+    # Freeze all parameters (no gradients will be computed)
+    for param in model.parameters():
+        param.requires_grad = False
+
+    return model
