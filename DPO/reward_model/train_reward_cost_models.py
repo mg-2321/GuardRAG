@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 """
-Train reward and cost models (Eq 4, Eq 5 in the paper).
+Train reward and cost models
 
 We train two scalar scoring models on preference pairs:
   - reward model r_phi prefers chosen over rejected
