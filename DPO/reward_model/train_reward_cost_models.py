@@ -21,7 +21,7 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, get_cosine_schedule_with_warmup
 
-from guardrag_training.rlhf.reward_cost_models import pairwise_cost_loss, pairwise_ranking_loss
+from DPO.reward_model.reward_cost_models import pairwise_cost_loss, pairwise_ranking_loss
 
 
 def _collate(tokenizer, batch, max_length: int):
@@ -122,4 +122,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
