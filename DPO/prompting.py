@@ -8,12 +8,6 @@ from rag_pipeline.types import Document
 
 @dataclass(frozen=True)
 class PromptTemplate:
-    """
-    Minimal, deployable prompt template that enforces instruction-role separation.
-
-    This mirrors the paper's idea: retrieved content is *untrusted evidence* and
-    must not override system policy.
-    """
 
     system_preamble: str = (
         "You are a helpful assistant in a Retrieval-Augmented Generation (RAG) system.\n"
