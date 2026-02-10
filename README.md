@@ -52,8 +52,7 @@ Phase 2 focuses on building adversarial training pipeline on RIPE-II's evaluatio
 
 **Defense Mechanisms:**
 - **Direct Preference Optimization (DPO)**: Train models to prefer clean over poisoned generations
-- **SimPO**: Simplified preference optimization for robust RAG models
-- **Preference Datasets**: Curated pairs of (clean, poisoned) generations for preference learning
+- **Preference Datasets**: Curated pairs of (secure, poisoned) generations for preference learning
 
 **Adversarial Training Components:**
 1. **Preference Data Generation**: Creates training pairs from Phase 1 evaluations
@@ -61,10 +60,10 @@ Phase 2 focuses on building adversarial training pipeline on RIPE-II's evaluatio
 3. **Adversarial Evaluation**: Validates robustness against attacks
 4. **Final Evaluation**: Comprehensive baseline vs DPO comparison with new metrics
 
-**New Metrics (Phase 2.1):**
-- **Helpfulness Score**: BLEU-based metric measuring response quality (0-1)
-- **Naturalness Score**: Perplexity-based metric measuring language fluency (0-1)
-- **Faithfulness Score**: Token overlap metric measuring context grounding (0-100%)
+**Key Metrics :**
+- **Helpfulness Score**: BLEU-based metric measuring response quality 
+- **Naturalness Score**: Perplexity-based metric measuring language fluency 
+- **Faithfulness Score**: Token overlap metric measuring context grounding 
 
 
 ---
