@@ -164,18 +164,6 @@ python evaluation/analyze_final_results.py \
     --output-dir evaluation/final_results/analysis
 ```
 
-### 7. Review Results
-
-```bash
-# View executive summary
-cat evaluation/final_results/analysis/SUMMARY_REPORT.txt
-
-# Export for Excel analysis
-open evaluation/final_results/analysis/metrics_comparison.csv
-```
-
-
-**Format:** Each document as `{"_id": "...", "title": "...", "text": "..."}`
 
 ## Models & Resources
 
@@ -196,44 +184,6 @@ open evaluation/final_results/analysis/metrics_comparison.csv
 - **DPO Module**: `DPO/dpo/train_dpo.py`
 - **SimPO Module**: `reference_models/simpo/`
 
-## Architecture
-
-```
-GuardRAG/
-├── evaluation/              # Phase 1 & 2: Evaluation
-│   ├── run_evaluation.py    # Unified evaluator (comparative, stages, generation)
-│   ├── metrics_calculator.py# Metric computations (ER@k, ASR, LR, ORR)
-│   ├── stage_by_stage_evaluation.py  # Stage-by-stage analysis
-│   ├── final_evaluation.py  # Phase 2.1: Baseline vs DPO comparison (NEW)
-│   ├── analyze_final_results.py  # Results analyzer & visualizer (NEW)
-│   └── diagnostic/          # Diagnostic tools
-├── rag_pipeline/            # RAG implementation
-│   ├── retrievers/          # BM25, Dense, SPLADE, Hybrid
-│   ├── pipeline.py          # Main pipeline
-│   └── generator.py         # LLM generation
-├── DPO/                     # Phase 2: Adversarial Defense
-│   ├── dpo/
-│   │   └── train_dpo.py     # DPO training orchestrator
-│   ├── data/
-│   │   └── build_preference_pairs.py  # Preference pair generation
-│   ├── reward_model/        # Reward modeling
-│   └── prompting.py         # Prompt utilities
-├── IPI_generators/          # Phase 1: Attack corpus generation
-│   ├── ipi_*/               # Per-corpus poisoned data
-│   └── dense_aligned_ipi_generator.py  # IPI generator
-├── reference_models/        # Phase 2: Model implementations
-│   ├── dpo/                 # DPO reference
-│   └── simpo/               # SimPO reference
-├── scripts/                 # Automation scripts
-│   ├── run_final_evaluation.sh  # Phase 2.1: One-command evaluation (NEW)
-│   ├── generate_dpo_all_corpuses_unified.sh  # Preference generation orchestrator
-│   └── generate_dpo_*.sh    # Per-corpus generation scripts
-├── FINAL_EVALUATION_GUIDE.md  # Phase 2.1: Complete evaluation guide (NEW)
-├── EVALUATION_QUICK_REFERENCE.txt  # Quick reference (NEW)
-├── EVALUATION_COMPLETION_CHECKLIST.txt  # Feature checklist (NEW)
-├── main.py                  # CLI entry point
-└── setup.py                 # Package configuration
-```
 
 ## Commands Reference
 
@@ -282,23 +232,33 @@ watch -n 60 'wc -l data/preference/dpo_*/*/clean.jsonl'
 
 ### Phase 2: DPO Model Training
 ```bash
-# Combine preference pairs
-cat data/preference/dpo_nfcorpus_full/nfcorpus/*.jsonl > \
-    data/preference/dpo_nfcorpus_full/nfcorpus_combined.jsonl
+#Preference Training Dataset Generation
+#Note: replace with any of the IPI generator corpuses
+python DPO/data/generate_balanced_pairs.py \
+    --queries data/corpus/beir/scifact/scifact/queries.jsonl \
+    --clean-corpus data/corpus/beir/scifact/scifact/corpus.jsonl \
+    --poisoned-corpus IPI_generators/ipi_scifact_v4b_final/scifact_ipi_poisoned_v4b.jsonl \
+    --metadata IPI_generators/ipi_scifact_v4b_final/scifact_ipi_metadata_dpo.jsonl \
+    --out data/preference/scifact_pairs.jsonl \
+    --generator-model meta-llama/Llama-3.1-8B-Instruct \
+    --reward-model OpenAssistant/reward-model-deberta-v3-large-v2 \
+    --top-k 3 \
+    --security-ratio 0.5 \
+    --limit 500
 
-# Train DPO model
-python DPO/dpo/train_dpo.py \
-    --model-name mistralai/Mistral-7B-Instruct-v0.2 \
-    --train-file data/preference/dpo_nfcorpus_full/nfcorpus_combined.jsonl \
-    --output-dir outputs/dpo_nfcorpus_mistral \
-    --num-train-epochs 3 \
-    --learning-rate 5e-5 \
-    --per-device-train-batch-size 4 \
-    --gradient-accumulation-steps 2 \
-    --bf16
 
-# Resume interrupted training
-python DPO/dpo/train_dpo.py \
-    --resume-from-checkpoint outputs/dpo_nfcorpus_mistral/checkpoint-500
+python -m DPO.dpo.train_dpo \
+    --model meta-llama/Llama-3.1-8B-Instruct \
+    --dataset data/preference/scifact_pairs.jsonl \ //change the corpus as needed
+    --output-dir outputs/dpo_scifact_lora \
+    --beta 0.1 \
+    --lambda-security 1.0 \
+    --lambda-utility 0.8 \
+    --lr 1e-6 \
+    --steps 2000 \
+    --batch-size 1 \
+    --grad-accum 8 \
+    --max-length 2048 \
+    --load-in-4bit
 ```
 
