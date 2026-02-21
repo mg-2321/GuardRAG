@@ -1,0 +1,27 @@
+GUARDRAG IPI ATTACK STATISTICS (v4 - Semantically Aligned)
+============================================================
+
+Dataset: nfcorpus
+Mode: stress
+Domain: biomedical
+Total poisoned docs: 3633
+Corpus size: 3633
+Poison rate: 100.00%
+Semantic query selection: True
+
+Query-doc overlap (mean): 0.462
+
+Technique distribution:
+  anchor_see_also_hijack: 280 (7.7%)
+  citation_hijack: 279 (7.7%)
+  code_comment_smuggling: 279 (7.7%)
+  html_hidden_comment: 279 (7.7%)
+  idem_optimized: 279 (7.7%)
+  json_ld_meta_injection: 279 (7.7%)
+  keyword_packing: 279 (7.7%)
+  near_query_placement: 279 (7.7%)
+  prompt_attack_template: 282 (7.8%)
+  semantic_cloaking: 279 (7.7%)
+  table_caption_directive: 280 (7.7%)
+  unicode_stealth: 279 (7.7%)
+  visual_ocr_injection: 280 (7.7%)
