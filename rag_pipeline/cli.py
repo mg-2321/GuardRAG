@@ -5,9 +5,11 @@ CLI to run the GuardRAG pipeline on a batch of queries.
 
 from __future__ import annotations
 
+
 import argparse
 import json
 from pathlib import Path
+from tqdm import tqdm
 
 from .chunking import ChunkerConfig
 from .evaluation import PipelineRun, compute_asr
@@ -122,7 +124,7 @@ def main():
     runs = []
 
     with Path(args.output).open("w", encoding="utf-8") as f:
-        for query in queries:
+        for query in tqdm(queries, desc="Processing queries"):
             result = pipeline.run(query, top_k=args.top_k)
             f.write(json.dumps(result) + "\n")
             runs.append(
