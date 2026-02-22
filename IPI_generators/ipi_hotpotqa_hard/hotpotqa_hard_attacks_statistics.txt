@@ -1,0 +1,27 @@
+GUARDRAG IPI ATTACK STATISTICS (v4 - Semantically Aligned)
+============================================================
+
+Dataset: hotpotqa
+Mode: hard
+Domain: general
+Total poisoned docs: 38421
+Corpus size: 153684
+Poison rate: 25.00%
+Semantic query selection: True
+
+Query-doc overlap (mean): 0.322
+
+Technique distribution:
+  anchor_see_also_hijack: 2955 (7.7%)
+  citation_hijack: 2955 (7.7%)
+  code_comment_smuggling: 2955 (7.7%)
+  html_hidden_comment: 2955 (7.7%)
+  idem_optimized: 2955 (7.7%)
+  json_ld_meta_injection: 2956 (7.7%)
+  keyword_packing: 2956 (7.7%)
+  near_query_placement: 2956 (7.7%)
+  prompt_attack_template: 2955 (7.7%)
+  semantic_cloaking: 2956 (7.7%)
+  table_caption_directive: 2956 (7.7%)
+  unicode_stealth: 2956 (7.7%)
+  visual_ocr_injection: 2955 (7.7%)
