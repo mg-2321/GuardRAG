@@ -11,6 +11,7 @@ JSONL-backed store with optional poisoning metadata.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Dict, Iterable, Iterator, List, Optional
 
@@ -42,11 +43,16 @@ class DocumentStore:
         path = Path(path)
         documents: List[Document] = []
 
+        bad_lines = 0
         with path.open("r", encoding="utf-8") as f:
             for line in f:
                 if not line.strip():
                     continue
-                data = json.loads(line)
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    bad_lines += 1
+                    continue
                 metadata = data.get("metadata", {}).copy()
                 for key, value in data.items():
                     if key not in {"_id", "title", "text", "metadata"}:
@@ -61,6 +67,9 @@ class DocumentStore:
                     documents.extend(chunker.chunk(doc))
                 else:
                     documents.append(doc)
+
+        if bad_lines:
+            print(f"Warning: skipped {bad_lines} invalid JSON lines in {path}", file=sys.stderr)
 
         return cls(documents)
 
@@ -86,4 +95,3 @@ class DocumentStore:
         with path.open("w", encoding="utf-8") as f:
             for doc in self._documents.values():
                 f.write(json.dumps(doc.to_dict()) + "\n")
-
