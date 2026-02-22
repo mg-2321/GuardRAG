@@ -9,10 +9,12 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from .chunking import Chunker, ChunkerConfig
 from .document_store import DocumentStore
-from .guards import GuardDecision, Guardrail, DEFAULT_GUARDS, build_guards
 from .query_processing import apply_processors, build_processors
 from .rerankers import BaseReranker, get_reranker
-from .retrievers import BaseRetriever, get_retriever
+
+# guards/ and retrievers/ are top-level packages (siblings of rag_pipeline_components/)
+from guards import GuardDecision, Guardrail, DEFAULT_GUARDS, build_guards
+from retrievers import BaseRetriever, get_retriever
 
 if TYPE_CHECKING:  # pragma: no cover
     # Avoid importing transformers-heavy generator module unless generation is enabled.
@@ -115,10 +117,14 @@ class Pipeline:
         )
 
     def _format_context(self, documents: Iterable) -> str:
+        """Format retrieved documents into a plain context string.
+
+        No [POISONED]/[CLEAN] labels are added — those would let the LLM trivially
+        ignore injected documents and would make ASR measurements meaningless.
+        """
         formatted = []
         for doc in documents:
-            label = "[POISONED]" if doc.is_poisoned else "[CLEAN]"
-            formatted.append(f"{label} {doc.title}\n{doc.text}")
+            formatted.append(f"{doc.title}\n{doc.text}")
         return "\n\n".join(formatted)
 
     @staticmethod
@@ -142,4 +148,3 @@ class Pipeline:
             ],
             "guard_decision": {"allow": decision.allow, "reason": decision.reason},
         }
-
