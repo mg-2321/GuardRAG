@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from rag_pipeline.pipeline import Pipeline, PipelineConfig
+from rag_pipeline_components.pipeline import Pipeline, PipelineConfig
 from evaluation.stage_by_stage_evaluation import StageByStageEvaluator
 
 RETRIEVERS = {
@@ -83,9 +83,13 @@ def evaluate_retriever(corpus_path: str, metadata_path: str, queries_path: str,
         return {
             'retriever': retriever_name,
             'stage3_retrieval': {
+                'total_queries': stage3_result.total_queries,
                 'poison_presence_top_k': stage3_result.poison_presence_top_k,
                 'poison_doc_count_avg_top_k': stage3_result.poison_doc_count_avg_top_k,
                 'poison_presence_top_k_by_family': stage3_result.poison_presence_top_k_by_family,
+                # MRR = mean(1/rank) over ALL queries (0 contribution if no poison retrieved)
+                'mrr': stage3_result.mrr,
+                # avg_rank_first_poison: mean rank over queries WHERE poison WAS retrieved (different from MRR)
                 'avg_rank_first_poison': (
                     sum(stage3_result.rank_of_first_poison) / len(stage3_result.rank_of_first_poison)
                     if stage3_result.rank_of_first_poison else 0.0
@@ -112,15 +116,22 @@ def main():
     parser.add_argument('--corpus-name', required=True, help='Corpus name')
     parser.add_argument('--output-dir', default='evaluation/comparative_results', help='Output directory')
     parser.add_argument('--sample-size', type=int, default=None, help='Sample size (default: all queries)')
-    
+    parser.add_argument('--retrievers', nargs='+', default=None,
+                        help='Retrievers to run (default: all). Choices: bm25 dense splade hybrid_0.2 hybrid_0.5 hybrid_0.8')
+
     args = parser.parse_args()
-    
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
+    active_retrievers = {
+        k: v for k, v in RETRIEVERS.items()
+        if args.retrievers is None or k in args.retrievers
+    }
+
     results = {}
-    
-    for retriever_name, retriever_config in RETRIEVERS.items():
+
+    for retriever_name, retriever_config in active_retrievers.items():
         result = evaluate_retriever(
             args.corpus, args.metadata, args.queries,
             args.corpus_name, retriever_name, retriever_config,
@@ -139,22 +150,24 @@ def main():
     print("\n" + "="*80)
     print("RETRIEVER COMPARISON SUMMARY")
     print("="*80)
-    print(f"{'Retriever':<20} {'Top-1':<8} {'Top-3':<8} {'Top-5':<8} {'Top-10':<10} {'Avg Rank':<10}")
+    print(f"{'Retriever':<20} {'Top-1':<8} {'Top-3':<8} {'Top-5':<8} {'Top-10':<10} {'MRR':<8} {'AvgRank':<8}")
     print("-"*80)
-    
+
     for retriever_name, result in results.items():
         if 'error' in result:
             print(f"{retriever_name:<20} {'ERROR':<8}")
             continue
-        
-        poison_presence = result.get('stage3_retrieval', {}).get('poison_presence_top_k', {})
+
+        s3 = result.get('stage3_retrieval', {})
+        poison_presence = s3.get('poison_presence_top_k', {})
         top1 = poison_presence.get(1, poison_presence.get('1', 0))
         top3 = poison_presence.get(3, poison_presence.get('3', 0))
         top5 = poison_presence.get(5, poison_presence.get('5', 0))
         top10 = poison_presence.get(10, poison_presence.get('10', 0))
-        avg_rank = result.get('stage3_retrieval', {}).get('avg_rank_first_poison', 0)
-        
-        print(f"{retriever_name:<20} {top1:>6.1f}% {top3:>6.1f}% {top5:>6.1f}% {top10:>8.1f}% {avg_rank:>8.1f}")
+        mrr = s3.get('mrr', 0)
+        avg_rank = s3.get('avg_rank_first_poison', 0)
+
+        print(f"{retriever_name:<20} {top1:>6.1f}% {top3:>6.1f}% {top5:>6.1f}% {top10:>8.1f}% {mrr:>6.4f} {avg_rank:>7.2f}")
 
 if __name__ == "__main__":
     main()
