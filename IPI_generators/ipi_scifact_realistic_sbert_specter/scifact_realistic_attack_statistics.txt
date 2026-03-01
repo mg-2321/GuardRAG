@@ -1,0 +1,29 @@
+SCIFACT IPI ATTACK STATISTICS (v4b - Semantically Aligned)
+============================================================
+
+Dataset: scifact
+Mode: realistic
+Total poisoned docs: 155
+Corpus size: 5183
+Poison rate: 2.99%
+Semantic backend: sbert
+Min blend threshold: 0.2
+Require reused carrier: True
+
+Claim-doc overlap (mean): 0.102
+Directive-context blend (mean): 0.759
+
+Technique distribution:
+  appendix_injection: 12 (7.7%)
+  citation_hijack: 13 (8.4%)
+  claim_keyword_packing: 12 (7.7%)
+  ethics_injection: 12 (7.7%)
+  evidence_cloaking: 12 (7.7%)
+  figure_legend_injection: 11 (7.1%)
+  hypothesis_template: 11 (7.1%)
+  idem_optimized: 12 (7.7%)
+  methods_hidden: 11 (7.1%)
+  near_claim_placement: 12 (7.7%)
+  reference_hijack: 12 (7.7%)
+  reviewer_note: 13 (8.4%)
+  table_results_directive: 12 (7.7%)
