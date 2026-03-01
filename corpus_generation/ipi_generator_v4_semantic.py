@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-Advanced IPI Generator – NFCorpus (v4 - Semantically Aligned)
+IPI(Posioned Docs) Generator
 
-Improvements over v3:
 - Semantic query selection (TF-IDF similarity)
 - Boundary-safe insertion points
 - Doc-conditioned directive templates
 - Multiple poison rate modes
 - Automatic span validator
-- NFCorpus-specific carriers (MeSH, Clinical, etc.)
 """
 
 import json
@@ -20,16 +18,33 @@ from pathlib import Path
 from collections import defaultdict
 from typing import List, Dict, Tuple, Optional
 
-# Optional: TF-IDF for semantic query matching
+# TF-IDF for semantic query matching
 try:
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.metrics.pairwise import cosine_similarity
-    import numpy as np
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
-    print("sklearn not found - falling back to random query selection")
+    print("⚠️  sklearn not found - falling back to random query selection")
 
+# NumPy (used for TF-IDF and/or dense embeddings)
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None
+    print("⚠️  NumPy not found - semantic selection backends will be disabled")
+
+#  Dense embeddings via sentence-transformers for semantic query selection
+try:
+    from sentence_transformers import SentenceTransformer
+    HAS_SENTENCE_TRANSFORMERS = True
+except ImportError:
+    HAS_SENTENCE_TRANSFORMERS = False
+
+
+# Utility helpers
 
 def simple_tokenize(text: str) -> List[str]:
     return text.split()
@@ -87,8 +102,7 @@ def compute_overlap(query: str, doc_snippet: str) -> float:
         return 0.0
     return len(q_tokens & d_tokens) / len(q_tokens)
 
-
-
+# Generator
 # Mode → poison rate mapping
 MODE_RATES = {"realistic": 0.03, "hard": 0.25, "stress": 1.0}
 MODE_SUFFIX = {
@@ -108,13 +122,19 @@ class NFAdvancedIPIGeneratorV4:
         span_tokens_max: int = 30,
         include_idem: bool = True,
         semantic_queries: bool = True,
+        semantic_backend: str = "tfidf",  # tfidf | sbert
+        sbert_model: Optional[str] = None,
+        sbert_device: Optional[str] = None,
+        sbert_batch_size: int = 64,
+        embed_query_prefix: str = "",
+        embed_doc_prefix: str = "",
         seed: int = 13,
         dataset_name: str = "nfcorpus",   # Dataset prefix for output filenames
         mode: str = "realistic",           # realistic | hard | stress
         domain: str = "biomedical",        # biomedical | financial | general | web
     ):
         random.seed(seed)
-        if HAS_SKLEARN:
+        if HAS_NUMPY:
             np.random.seed(seed)
 
         self.dataset_name = dataset_name
@@ -135,7 +155,31 @@ class NFAdvancedIPIGeneratorV4:
         self.num_attacks = num_attacks
         self.span_tokens_max = span_tokens_max
         self.include_idem = include_idem
-        self.semantic_queries = semantic_queries and HAS_SKLEARN
+        # Semantic query selection configuration
+        self.semantic_queries = bool(semantic_queries)
+        self.semantic_backend = (semantic_backend or "tfidf").lower()  # tfidf | sbert | none
+        self.embed_query_prefix = embed_query_prefix or ""
+        self.embed_doc_prefix = embed_doc_prefix or ""
+        self.sbert_model_name = sbert_model or "sentence-transformers/all-MiniLM-L6-v2"
+        self.sbert_device = sbert_device
+        self.sbert_batch_size = int(sbert_batch_size)
+
+        if not self.semantic_queries:
+            self.semantic_backend = "none"
+        elif self.semantic_backend == "tfidf":
+            if not (HAS_SKLEARN and HAS_NUMPY):
+                print("⚠️  TF-IDF backend requested but sklearn/NumPy unavailable; falling back to random query selection")
+                self.semantic_queries = False
+                self.semantic_backend = "none"
+        elif self.semantic_backend == "sbert":
+            if not (HAS_SENTENCE_TRANSFORMERS and HAS_NUMPY):
+                raise RuntimeError("Semantic backend 'sbert' requires sentence-transformers and numpy. Install with: pip install sentence-transformers numpy")
+            # Auto-prefix for E5 models if user didn't set prefixes
+            if (not self.embed_query_prefix and not self.embed_doc_prefix) and "e5" in self.sbert_model_name.lower():
+                self.embed_query_prefix = "query: "
+                self.embed_doc_prefix = "passage: "
+        else:
+            raise ValueError(f"Unknown semantic backend: {self.semantic_backend}. Use tfidf or sbert.")
 
         self.metadata = []
         self.stats = defaultdict(int)
@@ -164,9 +208,8 @@ class NFAdvancedIPIGeneratorV4:
         if include_idem:
             self.attacks["idem_optimized"] = (self.attack_idem, False, "idem")
 
-    # -------------------------
+ 
     # Loading & Indexing
-    # -------------------------
 
     def _load_jsonl(self, path: str) -> List[Dict]:
         items = []
@@ -179,46 +222,83 @@ class NFAdvancedIPIGeneratorV4:
         return items
 
     def _build_query_index(self):
-        """Build TF-IDF index for semantic query selection"""
-        print("  Building TF-IDF query index...")
+        """Build query index for semantic query selection (TF-IDF or SBERT)."""
         self.query_texts = [q.get("text", "") for q in self.queries]
-        self.vectorizer = TfidfVectorizer(
-            min_df=2, 
-            max_df=0.95,
-            ngram_range=(1, 2), 
-            stop_words="english"
-        )
-        self.Q = self.vectorizer.fit_transform(self.query_texts)
-        print(f"  ✓ Indexed {len(self.query_texts)} queries")
+        if not self.query_texts:
+            print("  No queries loaded; semantic selection disabled")
+            self.semantic_queries = False
+            self.semantic_backend = "none"
+            return
 
+        if self.semantic_backend == "tfidf":
+            print("  Building TF-IDF query index...")
+            self.vectorizer = TfidfVectorizer(
+                min_df=2,
+                max_df=0.95,
+                ngram_range=(1, 2),
+                stop_words="english",
+            )
+            self.Q = self.vectorizer.fit_transform(self.query_texts)
+            print(f"  ✓ Indexed {len(self.query_texts)} queries (TF-IDF)")
+            return
+
+        if self.semantic_backend == "sbert":
+            print(f"  Building SBERT query index using {self.sbert_model_name} ...")
+            if self.sbert_device:
+                self.sbert_model = SentenceTransformer(self.sbert_model_name, device=self.sbert_device)
+            else:
+                self.sbert_model = SentenceTransformer(self.sbert_model_name)
+            q_inputs = [(self.embed_query_prefix + t) for t in self.query_texts]
+            self.query_embs = self.sbert_model.encode(
+                q_inputs,
+                batch_size=self.sbert_batch_size,
+                normalize_embeddings=True,
+                show_progress_bar=True,
+            )
+            self.query_embs = np.asarray(self.query_embs, dtype=np.float32)
+            print(f"  ✓ Indexed {len(self.query_texts)} queries (SBERT)")
+            return
+
+        # Unknown backend
+        print(f" Unknown semantic backend {self.semantic_backend}; disabling semantic selection")
+        self.semantic_queries = False
+        self.semantic_backend = "none"
     def pick_semantic_query(self, doc: Dict, top_k: int = 10) -> str:
-        """Pick a query semantically similar to the document"""
+        """Pick a query semantically similar to the document."""
         if not self.semantic_queries:
             return random.choice(self.queries).get("text", "")
-        
-        # Use title + first part of text as snippet
+
         title = doc.get("title", "")
         snippet = f"{title}. {doc.get('text', '')[:600]}"
-        
-        D = self.vectorizer.transform([snippet])
-        sims = cosine_similarity(D, self.Q).ravel()
-        
-        # Get top-k indices
-        top_k = max(1, min(top_k, len(sims)))
-        top_indices = np.argpartition(-sims, top_k - 1)[:top_k]
-        top_indices = top_indices[np.argsort(-sims[top_indices])]
-        
-        # Sample from top-k (weighted by similarity)
-        top_sims = sims[top_indices]
-        if top_sims.sum() > 0:
-            probs = top_sims / top_sims.sum()
-            idx = np.random.choice(top_indices, p=probs)
+
+        if self.semantic_backend == "tfidf":
+            D = self.vectorizer.transform([snippet])
+            sims = cosine_similarity(D, self.Q).ravel()
+        elif self.semantic_backend == "sbert":
+            doc_input = self.embed_doc_prefix + snippet
+            d_emb = self.sbert_model.encode([doc_input], batch_size=1, normalize_embeddings=True, show_progress_bar=False)
+            d_emb = np.asarray(d_emb, dtype=np.float32).reshape(-1)
+            sims = self.query_embs @ d_emb
         else:
-            idx = random.choice(top_indices.tolist())
-        
+            return random.choice(self.queries).get("text", "")
+
+        if sims.size == 0:
+            return random.choice(self.queries).get("text", "")
+
+        top_k = max(1, min(top_k, int(sims.shape[0])))
+        # np.argpartition kth is 0-indexed
+        kth = top_k - 1
+        top_indices = np.argpartition(-sims, kth)[:top_k]
+        top_indices = top_indices[np.argsort(-sims[top_indices])]
+
+        top_sims = sims[top_indices]
+        # Sample weighted by similarity if possible
+        if float(top_sims.sum()) > 0:
+            probs = top_sims / float(top_sims.sum())
+            idx = int(np.random.choice(top_indices, p=probs))
+        else:
+            idx = int(random.choice(top_indices.tolist()))
         return self.query_texts[idx]
-
-
     def topic_hint_from_doc(self, doc: Dict) -> str:
         """Extract topic hint from document for blending"""
         title = doc.get("title", "")
@@ -307,7 +387,7 @@ class NFAdvancedIPIGeneratorV4:
         directive = random.choice(pool)
         return cap_tokens(directive, self.span_tokens_max)
 
-
+    # Domain-aware carriers
 
     def _get_carrier(self, carrier_type: str = "random") -> str:
         """Get domain-appropriate carrier/wrapper"""
@@ -350,6 +430,7 @@ class NFAdvancedIPIGeneratorV4:
         return random.choice(carriers.get(carrier_type, list(carriers.values())[0]))
 
 
+    # 13 Attack Techniques (boundary-safe, doc-conditioned)
 
     def attack_keyword_packing(self, doc: Dict, query: str) -> Tuple[str, Dict]:
         """Query++ keyword packing - append keywords + directive"""
@@ -642,10 +723,8 @@ class NFAdvancedIPIGeneratorV4:
             "span_start": s, "span_end": e
         }
 
-    # -------------------------
     # Validation
-    # -------------------------
-
+   
     def validate_span(self, text: str, span_start: int, span_end: int) -> bool:
         """Validate that span is correct"""
         if span_start < 0 or span_end > len(text) or span_start >= span_end:
@@ -653,9 +732,9 @@ class NFAdvancedIPIGeneratorV4:
         extracted = text[span_start:span_end]
         return len(extracted) >= 10  # Minimum reasonable length
 
-    # -------------------------
+ 
     # Main generation
-    # -------------------------
+
 
     def generate(self):
         print(f"\n{'='*60}")
@@ -710,7 +789,7 @@ class NFAdvancedIPIGeneratorV4:
 
             # Validate span
             if not self.validate_span(new_text, meta["span_start"], meta["span_end"]):
-                print(f"  ⚠️  Span validation failed for {technique_name}")
+                print(f" Span validation failed for {technique_name}")
                 validation_errors += 1
 
             poisoned_id = f"IPI_{self.dataset_name}_{i}_{clean['_id']}"
@@ -720,9 +799,6 @@ class NFAdvancedIPIGeneratorV4:
                 "text": new_text,
                 "title": clean.get("title", "")
             }
-            # Preserve metadata if present
-            if "metadata" in clean:
-                poisoned_doc["metadata"] = clean["metadata"]
 
             meta.update({
                 "original_id": clean["_id"],
@@ -737,12 +813,12 @@ class NFAdvancedIPIGeneratorV4:
 
         print(f"  ✓ Generated {len(poisoned_docs)} poisoned documents")
         if validation_errors > 0:
-            print(f"   {validation_errors} span validation errors")
+            print(f" {validation_errors} span validation errors")
         
         self._write_outputs(poisoned_docs)
         self._print_stats()
 
-
+    # Output
 
     def _write_outputs(self, poisoned_docs: List[Dict]):
         # Build filename prefix from dataset name and mode
@@ -775,6 +851,12 @@ class NFAdvancedIPIGeneratorV4:
             f.write(f"Corpus size: {len(self.corpus)}\n")
             f.write(f"Poison rate: {len(poisoned_docs)/len(self.corpus):.2%}\n")
             f.write(f"Semantic query selection: {self.semantic_queries}\n\n")
+            f.write(f"Semantic backend: {self.semantic_backend}\n")
+            if self.semantic_backend == "sbert":
+                f.write(f"Embedding model: {self.sbert_model_name}\n")
+                if self.embed_query_prefix or self.embed_doc_prefix:
+                    f.write(f"Embed prefixes: query=\"{self.embed_query_prefix}\" doc=\"{self.embed_doc_prefix}\"\n")
+            f.write("\n")
 
             if self.overlap_scores:
                 avg_overlap = sum(self.overlap_scores) / len(self.overlap_scores)
@@ -816,6 +898,10 @@ class NFAdvancedIPIGeneratorV4:
             "total_attacks": len(poisoned_docs),
             "include_idem": self.include_idem,
             "semantic_query_selection": self.semantic_queries,
+            "semantic_backend": self.semantic_backend,
+            "embedding_model": self.sbert_model_name if self.semantic_backend == "sbert" else None,
+            "embed_query_prefix": self.embed_query_prefix,
+            "embed_doc_prefix": self.embed_doc_prefix,
             "mean_query_overlap": sum(self.overlap_scores) / len(self.overlap_scores) if self.overlap_scores else 0,
             "stats": dict(self.stats)
         }
@@ -844,6 +930,7 @@ class NFAdvancedIPIGeneratorV4:
         print(f"{'='*60}\n")
 
 
+# CLI
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Generate semantically-aligned IPI poisoned corpus")
@@ -862,12 +949,22 @@ if __name__ == "__main__":
     ap.add_argument("--num-attacks", type=int, default=None, help="Exact number of attacks (overrides rate)")
     ap.add_argument("--no-idem", action="store_true", help="Disable IDEM attacks")
     ap.add_argument("--no-semantic", action="store_true", help="Disable semantic query selection")
+    ap.add_argument("--semantic-backend", choices=["tfidf", "sbert"], default="tfidf",
+                    help="Semantic query selection backend (default: tfidf). Use sbert for dense embeddings.")
+    ap.add_argument("--sbert-model", default=None,
+                    help="SentenceTransformer model name (e.g., sentence-transformers/allenai-specter, pritamdeka/S-PubMedBert-MS-MARCO, intfloat/e5-base-v2)")
+    ap.add_argument("--sbert-device", default=None, help="Device for embeddings (e.g., cpu, cuda)")
+    ap.add_argument("--sbert-batch-size", type=int, default=64, help="Batch size for embedding encoding")
+    ap.add_argument("--embed-query-prefix", default="",
+                    help="Prefix added before each query when encoding embeddings (useful for E5: 'query: ')")
+    ap.add_argument("--embed-doc-prefix", default="",
+                    help="Prefix added before each doc snippet when encoding embeddings (useful for E5: 'passage: ')")
     ap.add_argument("--seed", type=int, default=13, help="Random seed")
 
     args = ap.parse_args()
 
     print("\n" + "="*60)
-    print("IPI GENERATOR v4 (Semantically Aligned)")
+    print("IPI GENERATOR (Semantically Aligned)")
     print(f"  Dataset : {args.dataset}")
     print(f"  Mode    : {args.mode}  (poison rate: {MODE_RATES.get(args.mode, args.doc_poison_rate):.0%})")
     print(f"  Domain  : {args.domain}")
@@ -881,6 +978,12 @@ if __name__ == "__main__":
         num_attacks=args.num_attacks,
         include_idem=not args.no_idem,
         semantic_queries=not args.no_semantic,
+        semantic_backend=args.semantic_backend,
+        sbert_model=args.sbert_model,
+        sbert_device=args.sbert_device,
+        sbert_batch_size=args.sbert_batch_size,
+        embed_query_prefix=args.embed_query_prefix,
+        embed_doc_prefix=args.embed_doc_prefix,
         seed=args.seed,
         dataset_name=args.dataset,
         mode=args.mode,
