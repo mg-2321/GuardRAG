@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Protocol
 
-from ..document_store import Document
+from rag_pipeline_components.types import Document
 
 
 @dataclass
@@ -119,7 +119,8 @@ class SecAlignGuard:
         self._prompt_cues = False
 
         for doc in documents:
-            if doc.metadata.get("_poisoned"):
+            # Use the is_poisoned property which checks doc_id.startswith("IPI_")
+            if doc.is_poisoned:
                 self._poisoned_detected = True
             directive = doc.metadata.get("_directive") or doc.metadata.get("directive")
             if directive:
