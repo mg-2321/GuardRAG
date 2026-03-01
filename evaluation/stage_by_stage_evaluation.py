@@ -19,6 +19,8 @@ class Stage3Retrieval:
     poison_presence_top_k_by_family: Dict[str, Dict[int, float]]  # family -> (k -> percentage)
     rank_of_first_poison: List[int]
     rank_distribution_by_family: Dict[str, List[int]]
+    mrr: float  # Mean Reciprocal Rank of first poisoned doc (0 if not retrieved)
+    total_queries: int
 
 
 @dataclass
@@ -81,20 +83,17 @@ class StageByStageEvaluator:
         
         total_queries = len(queries)
         print(f"Evaluating {total_queries} queries (generation: disabled)...")
-        
+
         # Initialize metrics
         poison_presence_top_k = {k: 0 for k in k_values}
         poison_doc_count_sum_top_k = {k: 0 for k in k_values}
         poison_presence_by_family_counts = defaultdict(lambda: {k: 0 for k in k_values})
         rank_of_first_poison = []
         rank_distribution_by_family = defaultdict(list)
-        
-        # Evaluate each query
-        for i, query_obj in enumerate(queries, 1):
-            if i % 10 == 0:
-                print(f"  Progress: {i}/{total_queries} queries")
+
+        for query_obj in queries:
             
-            query_id = query_obj.get('_id', str(i))
+            query_id = query_obj.get('_id', '')
             query_text = query_obj.get('text', '')
             
             if not query_text:
@@ -127,8 +126,7 @@ class StageByStageEvaluator:
                     # Attack-family exposure: presence of *any* poisoned doc from a family in top-k
                     families_in_top_k = set()
                     for doc in poisoned_docs:
-                        original_id = doc.doc_id.split('_')[-1]
-                        meta = self.metadata_by_doc_id.get(original_id, {})
+                        meta = self.metadata_by_doc_id.get(doc.doc_id, {})
                         families_in_top_k.add(meta.get('attack_family', 'unknown'))
                     for fam in families_in_top_k:
                         poison_presence_by_family_counts[fam][k] += 1
@@ -136,12 +134,10 @@ class StageByStageEvaluator:
                 # Find first poisoned document rank
                 for rank, doc in enumerate(retrieved_docs, 1):
                     if doc.is_poisoned:
-                        # Map poisoned variant ID -> ORIGINAL_ID for metadata lookup
-                        original_id = doc.doc_id.split('_')[-1]
                         rank_of_first_poison.append(rank)
-                        
+
                         # Get attack family from metadata
-                        meta = self.metadata_by_doc_id.get(original_id, {})
+                        meta = self.metadata_by_doc_id.get(doc.doc_id, {})
                         attack_family = meta.get('attack_family', 'unknown')
                         rank_distribution_by_family[attack_family].append(rank)
                         break
@@ -168,13 +164,21 @@ class StageByStageEvaluator:
             }
             for fam, counts in poison_presence_by_family_counts.items()
         }
-        
+
+        # MRR: mean of 1/rank over ALL queries (0 contribution if no poison retrieved)
+        mrr = (
+            sum(1.0 / r for r in rank_of_first_poison) / total_queries
+            if total_queries > 0 else 0.0
+        )
+
         return Stage3Retrieval(
             poison_presence_top_k=poison_presence_top_k_pct,
             poison_doc_count_avg_top_k=poison_doc_count_avg_top_k,
             poison_presence_top_k_by_family=poison_presence_top_k_by_family_pct,
             rank_of_first_poison=rank_of_first_poison,
-            rank_distribution_by_family=dict(rank_distribution_by_family)
+            rank_distribution_by_family=dict(rank_distribution_by_family),
+            mrr=mrr,
+            total_queries=total_queries,
         )
     
     def evaluate_stage5_packing(self, pipeline, sample_size: Optional[int] = None) -> Stage5Packing:
@@ -199,13 +203,15 @@ class StageByStageEvaluator:
         if sample_size:
             queries = queries[:sample_size]
         
-        # Initialize position buckets
+        # Initialize position buckets — keys match actual metadata values from IPI generator
+        # ('early', 'late', 'random' appear in metadata; 'early_mid'/'late_mid' do not)
         position_buckets = {
-            'start': {'total': 0, 'survived': 0},
-            'early_mid': {'total': 0, 'survived': 0},
-            'mid': {'total': 0, 'survived': 0},
-            'late_mid': {'total': 0, 'survived': 0},
-            'end': {'total': 0, 'survived': 0}
+            'start':  {'total': 0, 'survived': 0},
+            'early':  {'total': 0, 'survived': 0},
+            'mid':    {'total': 0, 'survived': 0},
+            'late':   {'total': 0, 'survived': 0},
+            'end':    {'total': 0, 'survived': 0},
+            'random': {'total': 0, 'survived': 0},
         }
         
         structural_buckets = {
@@ -217,12 +223,17 @@ class StageByStageEvaluator:
             'table_caption': {'total': 0, 'survived': 0}
         }
         
+        # Character budget for the context window simulation.
+        # Represents a realistic LLM context limit (≈2 000 tokens worth of context text,
+        # leaving headroom for the system prompt, question, and response).
+        MAX_CONTEXT_CHARS = 8000
+
         # Evaluate packing for queries that retrieve poison
         for query_obj in queries:
             query_text = query_obj.get('text', '')
             if not query_text:
                 continue
-            
+
             try:
                 candidate_pool = max(10, getattr(pipeline.config, "candidate_pool_size", 10))
                 retrieved = pipeline.retriever.retrieve(query_text, top_k=candidate_pool)
@@ -230,32 +241,50 @@ class StageByStageEvaluator:
                     retrieved = pipeline.reranker.rerank(query_text, retrieved)
                 retrieved = retrieved[:10]
                 retrieved_docs = [doc for doc, _score in retrieved]
-                
-                # Check each retrieved document
+
+                # Simulate the packing stage: concatenate docs in rank order and
+                # truncate at MAX_CONTEXT_CHARS (mirrors _format_context in pipeline.py).
+                context_parts = []
+                char_count = 0
+                for d in retrieved_docs:
+                    part = f"{d.title}\n{d.text}" if getattr(d, 'title', '') else d.text
+                    context_parts.append(part)
+                    char_count += len(part) + 2  # +2 for the "\n\n" separator
+                full_context = "\n\n".join(context_parts)
+                packed_context = full_context[:MAX_CONTEXT_CHARS]
+
+                # Check each retrieved poisoned document for span survival.
                 for doc in retrieved_docs:
-                    # Only evaluate packing survival on actually-poisoned variants.
                     if not doc.is_poisoned:
                         continue
-                    
-                    original_id = doc.doc_id.split('_')[-1]
-                    meta = self.metadata_by_doc_id.get(original_id, {})
-                    
-                    # Check position
+
+                    meta = self.metadata_by_doc_id.get(doc.doc_id, {})
+
+                    # Use directive_preview (first ~50 chars of the injected span) as the
+                    # survival probe — if it appears in the truncated context, the span survived.
+                    directive_preview = meta.get('directive_preview', '')
+                    if not directive_preview:
+                        # Fall back to a substring of the doc text at the span offsets.
+                        s, e = meta.get('span_start', 0), meta.get('span_end', 0)
+                        if e > s:
+                            directive_preview = doc.text[s:min(e, s + 50)]
+                    probe = directive_preview[:50].strip()
+                    survived = bool(probe) and (probe in packed_context)
+
+                    # Position survival
                     position = meta.get('position', 'mid')
                     if position in position_buckets:
                         position_buckets[position]['total'] += 1
-                        # Simplified: assume mid positions survive (this should be more sophisticated)
-                        if position in ['early_mid', 'mid']:
+                        if survived:
                             position_buckets[position]['survived'] += 1
-                    
-                    # Check structural carrier
+
+                    # Structural carrier survival
                     structural_type = meta.get('structural_carrier', '')
                     if structural_type in structural_buckets:
                         structural_buckets[structural_type]['total'] += 1
-                        # Simplified: assume code/caption/table_caption survive
-                        if structural_type in ['caption', 'code', 'table_caption']:
+                        if survived:
                             structural_buckets[structural_type]['survived'] += 1
-                            
+
             except Exception as e:
                 continue
         
