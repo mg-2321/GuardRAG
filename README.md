@@ -14,7 +14,7 @@ GuardRAG provides:
 
 ### Phase 1: RIPE-II - Retrieval-based IPI Evaluation Framework
 
-**Paper:** [RIPE-II: Comprehensive Evaluation of In-Context Poisoning Attacks on RAG](https://drive.google.com/file/d/1HL38P9Vaa6xc7O_Gs1ch1ONSJ0v-_XyY/view?usp=sharing)
+**Paper:** [RIPE-II: Comprehensive Evaluation of In-Context Poisoning Attacks on RAG](https://drive.google.com/file/d/1dYubfXiLJBzy505P_4jGKlRE0lS1ZaVc/view?usp=sharing)
 
 Phase 1 establishes the comprehensive evaluation framework for IPI attacks on RAG systems:
 
