@@ -1,20 +1,20 @@
 """
-Model configurations for different LLMs in GuardRAG evaluation.
+Model configurations for different LLMs in RIPE-II evaluation.
 """
 
 MODEL_CONFIGS = {
-    # Llama 3.1 models (older)
+    # Llama 3.1 models (local cluster paths — offline mode)
     'llama-3.1-8b': {
-        'model_name': 'meta-llama/Llama-3.1-8B-Instruct',
+        'model_name': '/gscratch/uwb/gayat23/models/Meta-Llama-3-8B-Instruct',
         'max_new_tokens': 256,
         'temperature': 0.0,
         'top_p': 1.0,
         'device': 'cuda',
-        'load_in_8bit': False,
+        'load_in_8bit': True,   # 8-bit for memory savings on RTX 6000
         'load_in_4bit': False,
         'device_map': 'auto',
         'torch_dtype': 'float16',
-        'description': 'Llama 3.1 8B Instruct (baseline model from Phase 1)',
+        'description': 'Llama 3.1 8B Instruct (local)',
     },
     
     'llama-3.1-70b': {
@@ -63,7 +63,7 @@ MODEL_CONFIGS = {
     },
     
     'llama-3.3-70b-4bit': {
-        'model_name': 'meta-llama/Llama-3.3-70B-Instruct',
+        'model_name': '/gscratch/uwb/gayat23/hf_cache/Llama-3.3-70B-Instruct',
         'max_new_tokens': 256,
         'temperature': 0.0,
         'top_p': 1.0,
@@ -72,7 +72,7 @@ MODEL_CONFIGS = {
         'load_in_4bit': True,  # 4-bit quantization
         'device_map': 'auto',
         'torch_dtype': 'bfloat16',
-        'description': 'Llama 3.3 70B Instruct (4-bit, ~40GB) - RECOMMENDED for RTX 6000',
+        'description': 'Llama 3.3 70B Instruct (4-bit, ~35GB) - local',
         'min_gpu_memory': '48GB',
     },
     
@@ -88,6 +88,127 @@ MODEL_CONFIGS = {
         'device_map': 'auto',
         'torch_dtype': 'float16',
         'description': 'Llama 2 70B Chat (comparison baseline)',
+    },
+
+    # ── Mistral models (local, open-source) ─────────────────────────────────
+    'mistral-7b': {
+        'model_name': '/gscratch/uwb/gayat23/hf_cache/Mistral-7B-Instruct-v0.3',
+        'provider': 'local',
+        'max_new_tokens': 256,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'device': 'cuda',
+        'load_in_8bit': True,
+        'load_in_4bit': False,
+        'device_map': 'auto',
+        'torch_dtype': 'float16',
+        'description': 'Mistral 7B Instruct v0.3 (local, 8-bit, ~7GB VRAM)',
+        'min_gpu_memory': '16GB',
+    },
+
+    # ── Qwen models (local) ──────────────────────────────────────────────────
+    'qwen3.5-27b': {
+        'model_name': '/gscratch/uwb/gayat23/hf_cache/Qwen3.5-27B',
+        'provider': 'local',
+        'max_new_tokens': 256,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'device': 'cuda',
+        'load_in_8bit': False,
+        'load_in_4bit': True,
+        'device_map': 'auto',
+        'torch_dtype': 'bfloat16',
+        'description': 'Qwen3.5 27B (local, 4-bit, ~14GB VRAM)',
+        'min_gpu_memory': '16GB',
+        'trust_remote_code': True,
+    },
+
+    'glm-4-9b-chat-hf': {
+        'model_name': '/gscratch/uwb/gayat23/hf_cache/glm-4-9b-chat-hf',
+        'provider': 'local',
+        'max_new_tokens': 256,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'device': 'cuda',
+        'load_in_8bit': False,
+        'load_in_4bit': False,
+        'device_map': 'auto',
+        'torch_dtype': 'bfloat16',
+        'trust_remote_code': True,
+        'use_chat_template': True,
+        'description': 'GLM-4-9B-Chat HF (local, BF16, chat-based GLM baseline)',
+        'min_gpu_memory': '24GB',
+    },
+
+    'mixtral-8x7b': {
+        'model_name': 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+        'provider': 'local',
+        'max_new_tokens': 256,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'device': 'cuda',
+        'load_in_8bit': False,
+        'load_in_4bit': True,
+        'device_map': 'auto',
+        'torch_dtype': 'float16',
+        'description': 'Mixtral 8x7B Instruct (4-bit quantized, ~24GB VRAM)',
+        'min_gpu_memory': '24GB',
+    },
+
+    # ── OpenAI API models ────────────────────────────────────────────────────
+    'gpt-5.2': {
+        'model_name': 'gpt-5.2',
+        'provider': 'openai',
+        'max_new_tokens': 512,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'description': 'GPT-5.2 (OpenAI API) — flagship commercial baseline',
+    },
+
+    'gpt-5-mini': {
+        'model_name': 'gpt-5-mini',
+        'provider': 'openai',
+        'max_new_tokens': 512,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'description': 'GPT-5 Mini (OpenAI API) — efficient commercial baseline',
+    },
+
+    'gpt-4o': {
+        'model_name': 'gpt-4o',
+        'provider': 'openai',
+        'max_new_tokens': 512,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'description': 'GPT-4o (OpenAI API) — previous generation commercial baseline',
+    },
+
+    'gpt-4o-mini': {
+        'model_name': 'gpt-4o-mini',
+        'provider': 'openai',
+        'max_new_tokens': 512,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'description': 'GPT-4o Mini (OpenAI API) — efficient baseline',
+    },
+
+    # ── Anthropic API models ─────────────────────────────────────────────────
+    'claude-3-5-sonnet': {
+        'model_name': 'claude-sonnet-4-6',
+        'provider': 'anthropic',
+        'max_new_tokens': 512,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'description': 'Claude Sonnet 4.6 (Anthropic API)',
+    },
+
+    'claude-3-5-haiku': {
+        'model_name': 'claude-haiku-4-5-20251001',
+        'provider': 'anthropic',
+        'max_new_tokens': 512,
+        'temperature': 0.0,
+        'top_p': 1.0,
+        'description': 'Claude Haiku 4.5 (Anthropic API) — efficient',
     },
 }
 
