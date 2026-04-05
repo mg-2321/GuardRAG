@@ -1,5 +1,5 @@
 """
-Base retriever interfaces used by GuardRAG.
+Base retriever interfaces used by RIPE-II.
 
 Mirrors the RAG'n'Roll retriever contract: retrieve(query, top_k) ->
 List[(doc, score)] with scores normalized to higher=better.
