@@ -64,6 +64,27 @@ class OpenAIGenerator:
         self.config  = config
         self._last_call: float = 0.0
 
+    def _generate_via_responses(self, prompt: str) -> str:
+        response = self.client.responses.create(
+            model=self.model,
+            input=prompt,
+            max_output_tokens=self.config.max_new_tokens,
+            temperature=self.config.temperature,
+            top_p=self.config.top_p,
+        )
+
+        text = getattr(response, "output_text", None)
+        if text:
+            return text
+
+        chunks = []
+        for item in getattr(response, "output", []) or []:
+            for content in getattr(item, "content", []) or []:
+                piece = getattr(content, "text", None)
+                if piece:
+                    chunks.append(piece)
+        return "".join(chunks)
+
     def generate(self, prompt: str) -> str:
         # Enforce minimum inter-call spacing
         elapsed = time.time() - self._last_call
@@ -72,6 +93,11 @@ class OpenAIGenerator:
 
         for attempt in range(MAX_RETRIES):
             try:
+                if self.model.startswith("gpt-5"):
+                    text = self._generate_via_responses(prompt)
+                    self._last_call = time.time()
+                    return text or ""
+
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[{"role": "user", "content": prompt}],
