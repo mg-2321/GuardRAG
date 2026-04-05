@@ -131,21 +131,6 @@ Optional reranking is supported through the pipeline and component-study path.
 
 The repo also contains lightweight guard ablations in [guards/__init__.py](/mmfs1/home/gayat23/projects/guardrag-thesis/guards/__init__.py). These are useful for defense-side experiments, but the main RIPE-II benchmark is defined on the **raw / no-guard** pipeline unless noted otherwise.
 
-## Important Artifacts Kept In-Repo
-
-Compact benchmark corpora:
-
-- [IPI_generators/ipi_nfcorpus_realistic_main_candidate_v4](/mmfs1/home/gayat23/projects/guardrag-thesis/IPI_generators/ipi_nfcorpus_realistic_main_candidate_v4)
-- [IPI_generators/ipi_scifact_realistic_main_candidate_v1](/mmfs1/home/gayat23/projects/guardrag-thesis/IPI_generators/ipi_scifact_realistic_main_candidate_v1)
-- [IPI_generators/ipi_fiqa_realistic_engineered_blackbox_v2](/mmfs1/home/gayat23/projects/guardrag-thesis/IPI_generators/ipi_fiqa_realistic_engineered_blackbox_v2)
-
-Compact result summaries:
-
-- [results/nfcorpus_main_candidate_metrics.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/nfcorpus_main_candidate_metrics.md)
-- [results/nfcorpus_guard_ablation.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/nfcorpus_guard_ablation.md)
-- [results/scifact_main_candidate_metrics.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/scifact_main_candidate_metrics.md)
-- [results/fiqa_engineered_v2_metrics.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/fiqa_engineered_v2_metrics.md)
-
 ## What Stays Out Of Git
 
 Large runtime artifacts stay on `gscratch` and are not meant for GitHub:
@@ -155,8 +140,6 @@ Large runtime artifacts stay on `gscratch` and are not meant for GitHub:
 - logs
 - retriever caches
 - large pilot corpora such as MS MARCO merged artifacts
-
-The push plan is documented in [PUSH_TO_GITHUB.md](/mmfs1/home/gayat23/projects/guardrag-thesis/PUSH_TO_GITHUB.md).
 
 ## Environment Notes
 
@@ -181,4 +164,3 @@ This repo should be read as the **RIPE-II evaluation codebase**:
 - selection proof
 - compact benchmark artifacts
 
-If you need the separate training/defense repo, keep it separate from this one.
