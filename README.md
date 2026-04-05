@@ -1,263 +1,184 @@
-# GuardRAG: Aversarial Preference Training Pipeline Against Indirect Prompt Injection Attacks
+# RIPE-II: Retrieval In-Place Poisoning Evaluation with Indirect Prompt Injections
 
-A comprehensive framework for adversarial training and evaluating Retrieval-Augmented Generation (RAG) systems against In-Context Poisoning (IPI) attacks using Direct Preference Optimization (DPO).
+RIPE-II is a research framework for building poisoned RAG corpora and evaluating how indirect prompt injections change retrieval and generation behavior in end-to-end RAG systems.
 
-## Overview
+This repository is the **RIPE-II evaluation repo only**. It contains:
 
-GuardRAG provides:
-- **Poisoned Corpus Generation** - IPI corpus creation for multiple benchmark datasets
-- **Multi-Retriever Evaluation** - BM25, Dense, SPLADE, and Hybrid retrievers
-- **LLM Generation Testing** - Attack success rate and leakage detection with 8B and 70B models
-- **DPO Defense Training** - Direct Preference Optimization for robust model training
+- poisoned-corpus generation
+- retriever analysis across multiple retrieval configurations
+- end-to-end live attack evaluation with clean counterfactual baselines
+- document-selection proof / ablation analysis
+- compact benchmark artifacts and summary tables
 
-## Research Overview: Two-Phase Framework
+It does **not** include the separate phase-2 training repo.
 
-### Phase 1: RIPE-II - Retrieval-based IPI Evaluation Framework
+## Scope
 
-**Paper:** [RIPE-II: Comprehensive Evaluation of In-Context Poisoning Attacks on RAG](https://drive.google.com/file/d/1dYubfXiLJBzy505P_4jGKlRE0lS1ZaVc/view?usp=sharing)
+RIPE-II focuses on realistic and engineered-blackbox corpus poisoning for RAG. The main question is:
 
-Phase 1 establishes the comprehensive evaluation framework for IPI attacks on RAG systems:
+1. can a poisoned document be retrieved in a mixed corpus?
+2. does the model actually use it?
+3. does it change the answer relative to a clean baseline?
+4. how does this vary across retrievers, models, and corpora?
 
-**Stage-by-Stage Evaluation:**
-- **Stage 1-2**: Corpus & Query Preparation
-- **Stage 3**: Retrieval evaluation (poison exposure in top-k)
-- **Stage 4**: Context packing analysis
-- **Stage 5**: Ranking and positioning effects
-- **Stages 6**: Generation evaluation (ASR, leakage, refusal rates)
+## Main Corpora
 
-**Key Metrics:**
-- Exposure Rate (ER@k): % queries with poisoned docs in top-k
-- Ranking Drift Score (RDS): Position changes due to poisoning
-- Attack Success Rate (ASR): % following attack directives
-- Leakage Rate (LR): % containing injected content
-- Over-Refusal Rate (ORR): False positives on clean data
+- **NF-Corpus**
+- **SciFact**
+- **FiQA**
+- **HotpotQA**
+- **Natural Questions**
+- **MS MARCO**
 
-**Datasets:** NFCorpus, FiQA, SciFact, HotpotQA, Natural Questions
+## Repo Layout
 
-### BEIR Benchmarks
-| Dataset | Queries | Docs | Type |
-|---------|---------|------|------|
-| **NFCorpus** | 3,237 | 323,018 | Medical |
-| **FiQA** | 6,648 | 57,638 | Finance |
-| **SciFact** | 1,109 | 5,183 | Scientific |
-| **HotpotQA** | 97,852 | 5,233,235 | Multi-hop |
-| **Natural Questions** | 3,237 | 21,015,324 | Open-domain |
-
-**Download:** https://github.com/beir-cellar/beir
-
-
-### Phase 2: GuardRAG - Adversarial Defense Preference Training
-
-Phase 2 focuses on building adversarial training pipeline on RIPE-II's evaluation framework to implement defense mechanisms against IPI attacks:
-
-**Defense Mechanisms:**
-- **Direct Preference Optimization (DPO)**: Train models to prefer clean over poisoned generations
-- **Preference Datasets**: Curated pairs of (secure, poisoned) generations for preference learning
-
-**Adversarial Training Components:**
-1. **Preference Data Generation**: Creates training pairs from Phase 1 evaluations
-2. **DPO Training**: Optimizes models using preference learning
-3. **Adversarial Evaluation**: Validates robustness against attacks
-4. **Final Evaluation**: Comprehensive baseline vs DPO comparison with new metrics
-
-**Key Metrics :**
-- **Helpfulness Score**: BLEU-based metric measuring response quality 
-- **Naturalness Score**: Perplexity-based metric measuring language fluency 
-- **Faithfulness Score**: Token overlap metric measuring context grounding 
-
-
----
-
-## Quick Start
-
-### 1. Installation
-
-```bash
-# Install dependencies
-bash complete_package_install.sh
-
-# Verify installation
-python main.py --help
+```text
+configs/                  model and runtime config helpers
+corpus_generation/        corpus materialization and query-building scripts
+evaluation/               live judge eval, retriever study, selection proof
+guards/                   lightweight guard implementations
+IPI_generators/           compact poisoned benchmark corpora to keep in-repo
+rag_pipeline_components/  RAG pipeline implementation
+results/                  compact query files, tables, and summary artifacts
+retrievers/               BM25, dense, hybrid, SPLADE retrievers
+scripts/                  small utility scripts
+tests/                    focused regression tests
 ```
 
-### 2. Download Models & Data
+## Main Entry Points
+
+### 1. Build or materialize poisoned corpora
+
+Examples:
 
 ```bash
-# Download Llama 3.1 70B (optional, for generation evaluation)
-bash download_llama70b.sh
-
-# Download benchmark datasets (handled automatically)
-python main.py --mode rag --corpus hotpotqa --sample 10
+python corpus_generation/materialize_nfcorpus_realistic_main_candidate_v4.py
+python corpus_generation/materialize_scifact_realistic_main_candidate_v1.py
+python corpus_generation/materialize_fiqa_realistic_engineered_blackbox_v2.py
+python corpus_generation/materialize_nq_hotpotqa_realistic_engineered_blackbox_v1.py
 ```
 
-### 3. Run Phase 1: RIPE-II Evaluation
+### 2. Run end-to-end live evaluation
+
+The main evaluator is [evaluation/live_judge_eval.py](/mmfs1/home/gayat23/projects/guardrag-thesis/evaluation/live_judge_eval.py).
 
 ```bash
-# Comparative retriever evaluation
-python evaluation/run_evaluation.py --mode comparative --corpus hotpotqa --sample 100
-
-# Stage-by-stage analysis
-python evaluation/run_evaluation.py --mode stages --corpus fiqa
-
-# Generation evaluation (Stages 6-7 - ASR/LR metrics)
-python evaluation/run_evaluation.py --mode generation --corpus nfcorpus --sample 50
+python evaluation/live_judge_eval.py \
+  --corpus nfcorpus \
+  --tier main_candidate \
+  --model llama-3.1-8b \
+  --judge gpt-4o-mini \
+  --retriever bm25 \
+  --sample 20
 ```
 
-### 4. Generate Preference Training Data
+This evaluator reports:
+
+- poison exposure
+- target retrieval
+- answer generation on the poisoned corpus
+- clean baseline generation
+- cosine-style attack signal
+- LLM-judge counterfactual verdict
+
+### 3. Run retriever-only component analysis
+
+Use [evaluation/run_component_study.py](/mmfs1/home/gayat23/projects/guardrag-thesis/evaluation/run_component_study.py) to compare retrieval setups such as:
+
+- `bm25`
+- `dense_e5`
+- `hybrid`
+- `splade`
+- optional reranking
+
+Example:
 
 ```bash
-# Generate preference pairs (clean vs poisoned responses)
-# For a single corpus
-python DPO/data/build_preference_pairs.py \
-    --corpus nfcorpus \
-    --output-dir data/preference/dpo_nfcorpus_full \
-    --model mistralai/Mistral-7B-Instruct-v0.2
-
-# For all corpuses (sequentially)
-bash scripts/generate_dpo_all_corpuses_unified.sh
-
-# Monitor generation progress
-watch -n 60 'wc -l data/preference/dpo_*/*/clean.jsonl'
+python evaluation/run_component_study.py \
+  --corpus nfcorpus \
+  --tier main_candidate \
+  --retriever bm25 \
+  --top-k 10 \
+  --output results/nfcorpus_component_study_bm25.jsonl
 ```
 
-### 5. Train DPO Model
+### 4. Run selection proof / ablation
+
+Use [evaluation/run_selection_proof.py](/mmfs1/home/gayat23/projects/guardrag-thesis/evaluation/run_selection_proof.py) to test whether the model actually relied on the poisoned document.
 
 ```bash
-# Combine preference pairs from single corpus
-cat data/preference/dpo_nfcorpus_full/nfcorpus/*.jsonl > \
-    data/preference/dpo_nfcorpus_full/nfcorpus_combined.jsonl
-
-# Train DPO model
-python DPO/dpo/train_dpo.py \
-    --model-name mistralai/Mistral-7B-Instruct-v0.2 \
-    --train-file data/preference/dpo_nfcorpus_full/nfcorpus_combined.jsonl \
-    --output-dir outputs/dpo_nfcorpus_mistral \
-    --num-train-epochs 3 \
-    --learning-rate 5e-5 \
-    --per-device-train-batch-size 4 \
-    --gradient-accumulation-steps 2 \
-    --bf16
+python evaluation/run_selection_proof.py \
+  --results-file /path/to/live_judge_results.jsonl \
+  --corpus nfcorpus \
+  --tier main_candidate \
+  --model llama-3.1-8b \
+  --judge gpt-4o-mini \
+  --output /path/to/selection_proof.jsonl
 ```
 
-### 6. Run Final Evaluation (Baseline vs DPO)
+## Retrievers
 
-```bash
-# Run complete evaluation pipeline
-bash scripts/run_final_evaluation.sh
+Implemented retrievers:
 
-# Or run with custom settings
-python evaluation/final_evaluation.py \
-    --baseline-model mistralai/Mistral-7B-Instruct-v0.2 \
-    --dpo-model outputs/dpo_nfcorpus_mistral/final_model \
-    --corpus nfcorpus \
-    --output-dir evaluation/final_results
+- `bm25`
+- `dense`
+- `hybrid`
+- `splade`
 
-# Quick test (10 samples per dataset - 5 minutes)
-python evaluation/final_evaluation.py \
-    --dpo-model outputs/dpo_nfcorpus_mistral/final_model \
-    --max-samples 10
+Optional reranking is supported through the pipeline and component-study path.
 
-# Analyze results
-python evaluation/analyze_final_results.py \
-    --results evaluation/final_results/detailed_results.json \
-    --output-dir evaluation/final_results/analysis
-```
+## Guards
 
+The repo also contains lightweight guard ablations in [guards/__init__.py](/mmfs1/home/gayat23/projects/guardrag-thesis/guards/__init__.py). These are useful for defense-side experiments, but the main RIPE-II benchmark is defined on the **raw / no-guard** pipeline unless noted otherwise.
 
-## Models & Resources
+## Important Artifacts Kept In-Repo
 
-### LLMs
-- **Llama 3.1 8B**: Local inference, ~15 min per corpus
-  - Download: https://www.meta.com/llama/llama-downloads/
-  
-- **Llama 3.1 70B**: GPU required, ~3x slower than 8B
-  - Download: https://www.meta.com/llama/llama-downloads/
-  - Requires: 2x 40GB GPUs (A100) or equivalent
+Compact benchmark corpora:
 
-### Embedding Models
-- **E5-Large** (dense): `intfloat/e5-large-v2` (1,024 dims)
-- **SPLADE**: `naver/splade_pp_en_v1` (Sparse vectors)
-- **BM25**: Built-in (no download needed)
+- [IPI_generators/ipi_nfcorpus_realistic_main_candidate_v4](/mmfs1/home/gayat23/projects/guardrag-thesis/IPI_generators/ipi_nfcorpus_realistic_main_candidate_v4)
+- [IPI_generators/ipi_scifact_realistic_main_candidate_v1](/mmfs1/home/gayat23/projects/guardrag-thesis/IPI_generators/ipi_scifact_realistic_main_candidate_v1)
+- [IPI_generators/ipi_fiqa_realistic_engineered_blackbox_v2](/mmfs1/home/gayat23/projects/guardrag-thesis/IPI_generators/ipi_fiqa_realistic_engineered_blackbox_v2)
 
-### Reference Implementations
-- **DPO Module**: `DPO/dpo/train_dpo.py`
-- **SimPO Module**: `reference_models/simpo/`
+Compact result summaries:
 
+- [results/nfcorpus_main_candidate_metrics.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/nfcorpus_main_candidate_metrics.md)
+- [results/nfcorpus_guard_ablation.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/nfcorpus_guard_ablation.md)
+- [results/scifact_main_candidate_metrics.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/scifact_main_candidate_metrics.md)
+- [results/fiqa_engineered_v2_metrics.md](/mmfs1/home/gayat23/projects/guardrag-thesis/results/fiqa_engineered_v2_metrics.md)
 
-## Commands Reference
+## What Stays Out Of Git
 
-### Installation & Setup
-```bash
-bash complete_package_install.sh          # Full installation
-pip install -r requirements.txt           # Minimal install
-python setup.py install                   # Package install
-```
+Large runtime artifacts stay on `gscratch` and are not meant for GitHub:
 
-### Model Downloads
-```bash
-bash download_llama70b.sh                 # Download Llama 70B
-```
+- `data/`
+- raw `live_judge` JSONL outputs
+- logs
+- retriever caches
+- large pilot corpora such as MS MARCO merged artifacts
 
-### Phase 1: RIPE-II Evaluation
-```bash
-# Comparative retriever evaluation
-python evaluation/run_evaluation.py --mode comparative --corpus hotpotqa
+The push plan is documented in [PUSH_TO_GITHUB.md](/mmfs1/home/gayat23/projects/guardrag-thesis/PUSH_TO_GITHUB.md).
 
-# Stage-by-stage pipeline analysis
-python evaluation/run_evaluation.py --mode stages --corpus fiqa
+## Environment Notes
 
-# Generation evaluation (ASR/LR metrics)
-python evaluation/run_evaluation.py --mode generation --corpus nfcorpus
+Typical runs expect:
 
-# Batch evaluation on all corpora
-python evaluation/run_evaluation.py --mode comparative --all --sample 100
-```
+- a Python environment with the repo dependencies installed
+- Hugging Face model access for local embedding / generation models
+- OpenAI API access for judge models or external-guard experiments when used
+- large corpora and caches stored on `gscratch`
 
-### Phase 2: Preference Data Generation
-```bash
-# Generate preference pairs for single corpus
-python DPO/data/build_preference_pairs.py \
-    --corpus nfcorpus \
-    --output-dir data/preference/dpo_nfcorpus_full \
-    --model mistralai/Mistral-7B-Instruct-v0.2 \
-    --num-workers 8
+The Slurm launcher used most often in practice is:
 
-# Generate for all corpuses (sequentially)
-bash scripts/generate_dpo_all_corpuses_unified.sh
+- [run_live_judge_eval.sh](/mmfs1/home/gayat23/projects/guardrag-thesis/run_live_judge_eval.sh)
 
-# Monitor progress
-watch -n 60 'wc -l data/preference/dpo_*/*/clean.jsonl'
-```
+## Current Positioning
 
-### Phase 2: DPO Model Training
-```bash
-#Preference Training Dataset Generation
-#Note: replace with any of the IPI generator corpuses
-python DPO/data/generate_balanced_pairs.py \
-    --queries data/corpus/beir/scifact/scifact/queries.jsonl \
-    --clean-corpus data/corpus/beir/scifact/scifact/corpus.jsonl \
-    --poisoned-corpus IPI_generators/ipi_scifact_v4b_final/scifact_ipi_poisoned_v4b.jsonl \
-    --metadata IPI_generators/ipi_scifact_v4b_final/scifact_ipi_metadata_dpo.jsonl \
-    --out data/preference/scifact_pairs.jsonl \
-    --generator-model meta-llama/Llama-3.1-8B-Instruct \
-    --reward-model OpenAssistant/reward-model-deberta-v3-large-v2 \
-    --top-k 3 \
-    --security-ratio 0.5 \
-    --limit 500
+This repo should be read as the **RIPE-II evaluation codebase**:
 
+- attack corpus generation
+- retrieval analysis
+- live counterfactual attack evaluation
+- selection proof
+- compact benchmark artifacts
 
-python -m DPO.dpo.train_dpo \
-    --model meta-llama/Llama-3.1-8B-Instruct \
-    --dataset data/preference/scifact_pairs.jsonl \ //change the corpus as needed
-    --output-dir outputs/dpo_scifact_lora \
-    --beta 0.1 \
-    --lambda-security 1.0 \
-    --lambda-utility 0.8 \
-    --lr 1e-6 \
-    --steps 2000 \
-    --batch-size 1 \
-    --grad-accum 8 \
-    --max-length 2048 \
-    --load-in-4bit
-```
-
+If you need the separate training/defense repo, keep it separate from this one.
