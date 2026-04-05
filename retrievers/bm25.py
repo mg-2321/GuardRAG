@@ -1,15 +1,65 @@
 from __future__ import annotations
 
+import math
+from collections import Counter
 from typing import List, Tuple
 
 import numpy as np
 
 try:
-    from rank_bm25 import BM25Okapi
-except ImportError as exc:  # pragma: no cover
-    raise ImportError("rank-bm25 is required for BM25Retriever. Install via pip.") from exc
+    from rank_bm25 import BM25Okapi as _ExternalBM25Okapi
+except Exception:  # pragma: no cover
+    _ExternalBM25Okapi = None
 
 from .base import BaseRetriever, RetrieverResult
+
+
+class _FallbackBM25Okapi:
+    """Minimal BM25 implementation used when rank_bm25 is unavailable/broken."""
+
+    def __init__(self, corpus_tokens, *, k1: float = 1.5, b: float = 0.75):
+        self.k1 = k1
+        self.b = b
+        self.corpus_size = len(corpus_tokens)
+        self.doc_freqs = []
+        self.doc_len = []
+        df = Counter()
+
+        total_len = 0
+        for tokens in corpus_tokens:
+            freqs = Counter(tokens)
+            self.doc_freqs.append(freqs)
+            doc_len = len(tokens)
+            self.doc_len.append(doc_len)
+            total_len += doc_len
+            for token in freqs:
+                df[token] += 1
+
+        self.avgdl = (total_len / self.corpus_size) if self.corpus_size else 0.0
+        self.idf = {
+            token: max(0.0, math.log(1.0 + (self.corpus_size - freq + 0.5) / (freq + 0.5)))
+            for token, freq in df.items()
+        }
+
+    def get_scores(self, query_tokens):
+        scores = np.zeros(self.corpus_size, dtype=np.float32)
+        if not self.corpus_size:
+            return scores
+        avgdl = self.avgdl or 1.0
+        for token in query_tokens:
+            idf = self.idf.get(token)
+            if idf is None:
+                continue
+            for idx, freqs in enumerate(self.doc_freqs):
+                freq = freqs.get(token, 0)
+                if not freq:
+                    continue
+                denom = freq + self.k1 * (1.0 - self.b + self.b * (self.doc_len[idx] / avgdl))
+                scores[idx] += idf * ((freq * (self.k1 + 1.0)) / denom)
+        return scores
+
+
+BM25Okapi = _ExternalBM25Okapi or _FallbackBM25Okapi
 
 
 class BM25Retriever(BaseRetriever):
@@ -41,5 +91,4 @@ class BM25Retriever(BaseRetriever):
         doc_ids = [self._ids[i] for i in top_indices]
         doc_scores = [scores[i] for i in top_indices]
         return self._collect_documents(doc_ids, doc_scores)
-
 
