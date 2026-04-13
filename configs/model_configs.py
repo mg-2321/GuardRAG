@@ -1,5 +1,7 @@
 """
-Model configurations for different LLMs in RIPE-II evaluation.
+Model configurations for different LLMs in GuardRAG evaluation.
+
+Author: Gayatri Malladi
 """
 
 MODEL_CONFIGS = {
@@ -42,6 +44,10 @@ MODEL_CONFIGS = {
         'load_in_4bit': True,
         'device_map': 'auto',
         'torch_dtype': 'float16',
+        'cpu_offload': True,
+        'max_gpu_memory': '44GiB',
+        'max_cpu_memory': '120GiB',
+        'offload_folder': '/gscratch/uwb/gayat23/GuardRAG/cache/offload/llama-3.1-70b-4bit',
         'description': 'Llama 3.1 70B Instruct (4-bit quantized, ~40GB memory)',
         'min_gpu_memory': '48GB',
     },
@@ -72,6 +78,10 @@ MODEL_CONFIGS = {
         'load_in_4bit': True,  # 4-bit quantization
         'device_map': 'auto',
         'torch_dtype': 'bfloat16',
+        'cpu_offload': True,
+        'max_gpu_memory': '44GiB',
+        'max_cpu_memory': '120GiB',
+        'offload_folder': '/gscratch/uwb/gayat23/GuardRAG/cache/offload/llama-3.3-70b-4bit',
         'description': 'Llama 3.3 70B Instruct (4-bit, ~35GB) - local',
         'min_gpu_memory': '48GB',
     },
