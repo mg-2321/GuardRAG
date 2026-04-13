@@ -1,6 +1,8 @@
 """
 Base retriever interfaces used by RIPE-II.
 
+Author: Gayatri Malladi
+
 Mirrors the RAG'n'Roll retriever contract: retrieve(query, top_k) ->
 List[(doc, score)] with scores normalized to higher=better.
 """
@@ -36,4 +38,3 @@ class BaseRetriever(ABC):
             if doc is not None:
                 results.append((doc, float(score)))
         return results
-
