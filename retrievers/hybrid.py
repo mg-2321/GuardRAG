@@ -1,3 +1,9 @@
+"""
+Hybrid retriever that combines sparse and dense retrieval.
+
+Author: Gayatri Malladi
+"""
+
 from __future__ import annotations
 
 from typing import Dict, List, Tuple
@@ -39,6 +45,7 @@ class HybridRetriever(BaseRetriever):
         cache_dir: str = None,
         device: str = None,
         require_gpu: bool = False,
+        index_backend: str = "auto",
         pool_size: int = None,
     ):
         """
@@ -60,6 +67,7 @@ class HybridRetriever(BaseRetriever):
             cache_dir=cache_dir,
             device=device,
             require_gpu=require_gpu,
+            index_backend=index_backend,
         )
 
     # internal helpers 
