@@ -1,6 +1,8 @@
 """
 API-based generators for RIPE-II multi-model evaluation.
 
+Author: Gayatri Malladi
+
 Provides thin wrappers around OpenAI and Anthropic APIs that expose the same
 .generate(prompt) interface as the local HuggingFace Generator.
 
