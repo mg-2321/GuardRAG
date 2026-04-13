@@ -1,5 +1,7 @@
 """
 Query processing utilities.
+
+Author: Gayatri Malladi
 """
 
 from __future__ import annotations
@@ -52,5 +54,4 @@ def apply_processors(query: str, processors: Iterable[QueryProcessor]) -> str:
     for processor in processors:
         query = processor(query)
     return query
-
 
