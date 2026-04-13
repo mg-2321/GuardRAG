@@ -1,6 +1,8 @@
 """
 True SPLADE retriever using the masked-LM head aggregation.
 
+Author: Gayatri Malladi
+
 SPLADE (Sparse Lexical And Expansion) encodes text into a sparse vector over
 the full vocabulary (~30 k dimensions for BERT-base).  The encoding is:
 
