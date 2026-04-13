@@ -1,6 +1,8 @@
 """
 Generation interface for GuardRAG pipelines.
 
+Author: Gayatri Malladi
+
 Supports:
   - Local HuggingFace models (Llama, Mistral) via provider="local"
   - OpenAI API (GPT-4o)                        via provider="openai"
@@ -9,6 +11,7 @@ Supports:
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -27,6 +30,11 @@ class GenerationConfig:
     api_key: Optional[str] = None
     trust_remote_code: bool = False
     use_chat_template: bool = False
+    device_map: Optional[object] = None
+    cpu_offload: bool = False
+    max_gpu_memory: Optional[str] = None
+    max_cpu_memory: Optional[str] = None
+    offload_folder: Optional[str] = None
 
 
 class Generator:
@@ -76,19 +84,40 @@ class Generator:
         )
 
         if device == "cuda":
+            device_map = getattr(config, "device_map", None) or "auto"
             model_kwargs: dict = {
-                "device_map": "auto",
+                "device_map": device_map,
                 "low_cpu_mem_usage": True,
                 "trust_remote_code": trust_remote,
             }
+            max_memory = {}
+            if getattr(config, "max_gpu_memory", None):
+                max_memory[0] = getattr(config, "max_gpu_memory")
+            if getattr(config, "max_cpu_memory", None):
+                max_memory["cpu"] = getattr(config, "max_cpu_memory")
+            if max_memory:
+                model_kwargs["max_memory"] = max_memory
             if config.load_in_4bit:
                 from transformers import BitsAndBytesConfig
                 print("Loading model with 4-bit quantization (QLoRA)...")
-                model_kwargs["quantization_config"] = BitsAndBytesConfig(
+                quant_kwargs = dict(
                     load_in_4bit=True,
                     bnb_4bit_compute_dtype=torch.float16,
                     bnb_4bit_use_double_quant=True,
                     bnb_4bit_quant_type="nf4",
+                )
+                if getattr(config, "cpu_offload", False):
+                    quant_kwargs["llm_int8_enable_fp32_cpu_offload"] = True
+                    offload_folder = getattr(config, "offload_folder", None)
+                    if not offload_folder:
+                        safe_name = os.path.basename(str(config.model_name_or_path).rstrip("/")) or "model"
+                        offload_folder = f"/gscratch/uwb/gayat23/GuardRAG/cache/offload/{safe_name}"
+                    os.makedirs(offload_folder, exist_ok=True)
+                    model_kwargs["offload_folder"] = offload_folder
+                    model_kwargs["offload_state_dict"] = True
+                    print(f"Enabling CPU offload via {offload_folder} ...")
+                model_kwargs["quantization_config"] = BitsAndBytesConfig(
+                    **quant_kwargs
                 )
             elif getattr(config, "load_in_8bit", False):
                 print("Loading model with 8-bit quantization...")
@@ -141,6 +170,12 @@ class Generator:
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         prompt_len = inputs["input_ids"].shape[1]
+
+        # Long batch evals on shared 24 GB GPUs can fragment CUDA memory over time.
+        # Releasing cached blocks before each generation is slower, but avoids
+        # late-run OOMs without changing model outputs.
+        if self.device == "cuda":
+            torch.cuda.empty_cache()
 
         with torch.inference_mode():
             do_sample = self.config.temperature > 0.0
