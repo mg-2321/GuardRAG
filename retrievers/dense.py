@@ -1,22 +1,19 @@
+"""
+Dense retriever backed by a persistent vector index.
+
+Author: Gayatri Malladi
+"""
+
 from __future__ import annotations
 
 from typing import List
 from pathlib import Path
-import pickle
 import hashlib
 import os
 import time
 
-import numpy as np
-
-try:
-    from sentence_transformers import SentenceTransformer
-except ImportError as exc:  # pragma: no cover
-    raise ImportError(
-        "sentence-transformers is required for DenseRetriever. Install via pip."
-    ) from exc
-
 from .base import BaseRetriever, RetrieverResult
+from .vector_index import PersistentVectorIndex
 
 
 def _resolve_device(device: str | None, require_gpu: bool) -> str:
@@ -47,34 +44,30 @@ class DenseRetriever(BaseRetriever):
     name = "dense"
 
     @staticmethod
-    def _load_cached_embeddings(cache_path: Path):
-        print(f"Loading cached embeddings from {cache_path}")
-        with open(cache_path, 'rb') as f:
-            embeddings = pickle.load(f)
-        print(f"✅ Loaded {len(embeddings)} cached embeddings")
-        return embeddings
-
-    @staticmethod
-    def _save_cached_embeddings(cache_path: Path, embeddings) -> None:
-        tmp_path = cache_path.with_suffix(cache_path.suffix + '.tmp')
-        with open(tmp_path, 'wb') as f:
-            pickle.dump(embeddings, f)
-        os.replace(tmp_path, cache_path)
-        print(f"Saved embeddings to cache: {cache_path}")
+    def _index_dir(cache_dir: Path, model_name: str, corpus_hash: str, backend: str) -> Path:
+        safe_model = model_name.replace("/", "_")
+        return cache_dir / f"dense_{safe_model}_{corpus_hash}_{backend}"
 
     @classmethod
-    def _wait_for_cache(cls, cache_path: Path, lock_path: Path, poll_s: float = 5.0, timeout_s: float = 4 * 3600.0):
+    def _wait_for_cache(
+        cls,
+        index_dir: Path,
+        lock_path: Path,
+        poll_s: float = 5.0,
+        timeout_s: float = 4 * 3600.0,
+    ):
         start = time.time()
         announced = False
         while True:
-            if cache_path.exists():
-                return cls._load_cached_embeddings(cache_path)
+            if PersistentVectorIndex.exists(index_dir):
+                print(f"Loading cached vector index from {index_dir}")
+                return PersistentVectorIndex.load(index_dir)
             if not lock_path.exists():
                 return None
             if time.time() - start > timeout_s:
-                raise TimeoutError(f"Timed out waiting for cache build: {cache_path}")
+                raise TimeoutError(f"Timed out waiting for vector index build: {index_dir}")
             if not announced:
-                print(f"Waiting for embedding cache to be built by another job: {cache_path}")
+                print(f"Waiting for vector index to be built by another job: {index_dir}")
                 announced = True
             time.sleep(poll_s)
 
@@ -85,10 +78,18 @@ class DenseRetriever(BaseRetriever):
         cache_dir: str = None,
         device: str | None = None,
         require_gpu: bool = False,
+        index_backend: str = "auto",
     ):
         super().__init__(store)
         self.model_name = model_name
         self.device = _resolve_device(device, require_gpu)
+        self.index_backend = PersistentVectorIndex.resolve_backend(index_backend)
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:  # pragma: no cover
+            raise ImportError(
+                "sentence-transformers is required for DenseRetriever. Install via pip."
+            ) from exc
         print(f"Loading dense model '{model_name}' on {self.device}...")
         self.model = SentenceTransformer(model_name, device=self.device)
         self._ids = [doc.doc_id for doc in self.store]
@@ -106,25 +107,24 @@ class DenseRetriever(BaseRetriever):
         ]
         
         # Try to load cached embeddings
-        cache_path = None
         if cache_dir:
             cache_dir = Path(cache_dir)
             cache_dir.mkdir(parents=True, exist_ok=True)
-            # Create cache key from model name and corpus hash
             corpus_hash = hashlib.md5("".join(corpus_texts).encode()).hexdigest()[:16]
-            cache_path = cache_dir / f"dense_{model_name.replace('/', '_')}_{corpus_hash}.pkl"
-            lock_path = cache_path.with_suffix(cache_path.suffix + '.lock')
+            index_dir = self._index_dir(cache_dir, model_name, corpus_hash, self.index_backend)
+            lock_path = Path(str(index_dir) + ".lock")
 
-            if cache_path.exists():
-                self._embeddings = self._load_cached_embeddings(cache_path)
+            if PersistentVectorIndex.exists(index_dir):
+                print(f"Loading dense vector index from {index_dir}...")
+                self._index = PersistentVectorIndex.load(index_dir)
             else:
                 while True:
                     try:
                         fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
                     except FileExistsError:
-                        waited = self._wait_for_cache(cache_path, lock_path)
+                        waited = self._wait_for_cache(index_dir, lock_path)
                         if waited is not None:
-                            self._embeddings = waited
+                            self._index = waited
                             break
                         continue
 
@@ -132,13 +132,19 @@ class DenseRetriever(BaseRetriever):
                         with os.fdopen(fd, 'w') as lock_file:
                             lock_file.write(f"pid={os.getpid()}\n")
                         print(f"Encoding corpus with {model_name}...")
-                        print(f"  This may take 2-5 minutes for large models...")
-                        self._embeddings = self.model.encode(
+                        print("  Building persistent vector index...")
+                        embeddings = self.model.encode(
                             corpus_texts,
                             convert_to_numpy=True,
                             show_progress_bar=False,
                         )
-                        self._save_cached_embeddings(cache_path, self._embeddings)
+                        self._index = PersistentVectorIndex.build(
+                            index_dir=index_dir,
+                            ids=self._ids,
+                            embeddings=embeddings,
+                            backend=self.index_backend,
+                            metric="cosine",
+                        )
                         break
                     finally:
                         try:
@@ -147,9 +153,15 @@ class DenseRetriever(BaseRetriever):
                             pass
         else:
             print(f"Encoding corpus with {model_name}...")
-            print(f"  This may take 2-5 minutes for large models...")
-            self._embeddings = self.model.encode(corpus_texts, convert_to_numpy=True, show_progress_bar=False)
-        
+            print("  Building in-memory vector index...")
+            embeddings = self.model.encode(corpus_texts, convert_to_numpy=True, show_progress_bar=False)
+            self._index = PersistentVectorIndex.build_in_memory(
+                ids=self._ids,
+                embeddings=embeddings,
+                backend=self.index_backend,
+                metric="cosine",
+            )
+
         self._is_e5  = is_e5
         self._is_bge = is_bge
 
@@ -164,9 +176,5 @@ class DenseRetriever(BaseRetriever):
         else:
             query_text = query
         query_embedding = self.model.encode([query_text], convert_to_numpy=True)[0]
-        norms = np.linalg.norm(self._embeddings, axis=1) * np.linalg.norm(query_embedding)
-        similarities = np.dot(self._embeddings, query_embedding) / np.clip(norms, 1e-10, None)
-        top_indices = np.argsort(similarities)[::-1][:top_k]
-        doc_ids = [self._ids[i] for i in top_indices]
-        scores = [similarities[i] for i in top_indices]
+        doc_ids, scores = self._index.search(query_embedding, top_k=top_k)
         return self._collect_documents(doc_ids, scores)
