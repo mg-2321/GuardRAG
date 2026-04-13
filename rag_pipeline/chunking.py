@@ -1,5 +1,7 @@
 """
 Document chunking utilities.
+
+Author: Gayatri Malladi
 """
 
 from __future__ import annotations
@@ -78,4 +80,3 @@ class Chunker:
             if start < 0:
                 start = 0
         return spans
-
