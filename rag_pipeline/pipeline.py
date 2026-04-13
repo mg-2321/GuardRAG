@@ -1,16 +1,18 @@
 """
 End-to-end RAG pipeline scaffold inspired by RAG'n'Roll.
+
+Author: Gayatri Malladi
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from .chunking import Chunker, ChunkerConfig
 from .document_store import DocumentStore
 from .query_processing import apply_processors, build_processors
-from .rerankers import BaseReranker, get_reranker
 
 # guards/ and retrievers/ are top-level packages (siblings of rag_pipeline_components/)
 #
@@ -49,6 +51,7 @@ from retrievers import BaseRetriever, get_retriever
 if TYPE_CHECKING:  # pragma: no cover
     # Avoid importing transformers-heavy generator module unless generation is enabled.
     from .generator import GenerationConfig
+    from .rerankers import BaseReranker
 
 
 @dataclass
@@ -67,6 +70,7 @@ class PipelineConfig:
     reranker: Optional[str] = None
     reranker_kwargs: Dict = field(default_factory=dict)
     shared_generator: Optional[object] = None
+    document_store_mode: str = "auto"
 
 
 class Pipeline:
@@ -81,7 +85,20 @@ class Pipeline:
     def __init__(self, config: PipelineConfig):
         self.config = config
         chunker = Chunker(config.chunker) if config.chunker else None
-        self.store = DocumentStore.from_jsonl(config.document_path, chunker=chunker)
+        store_mode = (config.document_store_mode or "auto").strip().lower()
+        if store_mode not in {"auto", "memory", "lazy"}:
+            raise ValueError(
+                f"Unknown document_store_mode '{config.document_store_mode}'. "
+                "Available: auto, memory, lazy"
+            )
+        if store_mode == "auto":
+            doc_path = Path(config.document_path)
+            store_mode = "lazy" if chunker is None and doc_path.exists() and doc_path.stat().st_size >= 250_000_000 else "memory"
+        self.store = DocumentStore.from_jsonl(
+            config.document_path,
+            chunker=chunker,
+            lazy=(store_mode == "lazy"),
+        )
         retriever_cls = get_retriever(config.retriever)
         self.retriever: BaseRetriever = retriever_cls(self.store, **config.retriever_kwargs)
         if config.shared_generator is not None:
@@ -93,15 +110,18 @@ class Pipeline:
             self.generator = Generator(config.generation)
         else:
             self.generator = None
-        if config.guards:
+        # Distinguish "explicitly no guards" ([]) from "use defaults" (None).
+        if config.guards is not None:
             self.guards = config.guards
         elif config.guard_names:
             self.guards = build_guards(config.guard_names)
         else:
             self.guards = DEFAULT_GUARDS
         self.processors = build_processors(config.query_processors)
-        self.reranker: Optional[BaseReranker] = None
+        self.reranker: Optional["BaseReranker"] = None
         if config.reranker:
+            from .rerankers import get_reranker
+
             self.reranker = get_reranker(config.reranker, **config.reranker_kwargs)
 
     def run(
