@@ -1,3 +1,9 @@
+"""
+BM25 retriever implementation.
+
+Author: Gayatri Malladi
+"""
+
 from __future__ import annotations
 
 import math
@@ -91,4 +97,3 @@ class BM25Retriever(BaseRetriever):
         doc_ids = [self._ids[i] for i in top_indices]
         doc_scores = [scores[i] for i in top_indices]
         return self._collect_documents(doc_ids, doc_scores)
-
