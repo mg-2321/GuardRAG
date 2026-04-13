@@ -1,16 +1,13 @@
 """
 Reranking utilities.
+
+Author: Gayatri Malladi
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Iterable, List, Tuple
-
-try:
-    from sentence_transformers import CrossEncoder
-except ImportError:
-    CrossEncoder = None  # type: ignore
 
 from .types import Document
 
@@ -29,8 +26,14 @@ class CrossEncoderReranker(BaseReranker):
     name = "cross_encoder"
 
     def __init__(self, model_name: str = "cross-encoder/ms-marco-MiniLM-L-12-v2", top_n: int = 10):
-        if CrossEncoder is None:
+        try:
+            from sentence_transformers import CrossEncoder
+        except ImportError as exc:
             raise ImportError("sentence-transformers is required for CrossEncoderReranker.")
+        except Exception as exc:
+            raise RuntimeError(
+                "Failed to import sentence_transformers for CrossEncoderReranker."
+            ) from exc
         self.model = CrossEncoder(model_name)
         self.top_n = top_n
 
@@ -61,5 +64,3 @@ def get_reranker(name: str, **kwargs):
     except KeyError as exc:
         raise ValueError(f"Unknown reranker '{name}'. Available: {list(RERANKER_REGISTRY)}") from exc
     return cls(**kwargs)
-
-
