@@ -1,3 +1,9 @@
+"""
+Shared pipeline data types.
+
+Author: Gayatri Malladi
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -24,4 +30,3 @@ class Document:
         # New format: poisoned docs have _id starting with "IPI_"
         # Old format: had _poisoned in metadata
         return self.doc_id.startswith("IPI_") or bool(self.metadata.get("_poisoned", False))
-
