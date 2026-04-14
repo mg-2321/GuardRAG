@@ -2,7 +2,7 @@
 
 RIPE-II is a research framework for building poisoned RAG corpora and evaluating how indirect prompt injections change retrieval and generation behavior in end-to-end RAG systems.
 
-This repository is the **RIPE-II evaluation repo only**. It contains:
+This repository contains:
 
 - poisoned-corpus generation
 - retriever analysis across multiple retrieval configurations
