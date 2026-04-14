@@ -150,17 +150,4 @@ Typical runs expect:
 - OpenAI API access for judge models or external-guard experiments when used
 - large corpora and caches stored on `gscratch`
 
-The Slurm launcher used most often in practice is:
-
-- [run_live_judge_eval.sh](/mmfs1/home/gayat23/projects/guardrag-thesis/run_live_judge_eval.sh)
-
-## Current Positioning
-
-This repo should be read as the **RIPE-II evaluation codebase**:
-
-- attack corpus generation
-- retrieval analysis
-- live counterfactual attack evaluation
-- selection proof
-- compact benchmark artifacts
 
